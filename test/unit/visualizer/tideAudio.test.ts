@@ -79,11 +79,35 @@ describe('tide sound layer', () => {
         expect(later.breath).toBeGreaterThan(0);
     });
 
-    it('keeps a floor of breathing under a sustained low end', () => {
+    it('keeps only a small floor of breathing under a sustained low end', () => {
         const audio = new TideAudio();
         const frame = run(audio, input({ bands: bands({ bass: 0.8 }) }), 240);
 
-        expect(frame.breath).toBeGreaterThan(0.2);
+        // 以前这里要求明显垫底（>0.2），而那正是「安静时水面也不停、音乐进来没有对比度」的原因。
+        // 现在只留一层很低的底：不熄灭，但听着是静的。
+        expect(frame.breath).toBeGreaterThan(0.02);
+        expect(frame.breath).toBeLessThan(0.12);
+    });
+
+    it('tracks how hard the music is working over seconds, not how loud it is right now', () => {
+        const one = new TideAudio().update(input({ power: 1 }));
+        const settled = run(new TideAudio(), input({ power: 1 }), 600);
+
+        // 情绪是秒级的：一帧之内几乎不动，而响度已经先动了 —— 这正是「状态」与「响度」的分界。
+        expect(settled.mood).toBeGreaterThan(0.8);
+        expect(one.mood).toBeLessThan(settled.mood * 0.2);
+    });
+
+    it('enters the chorus and holds it through a dip between the two thresholds', () => {
+        const audio = new TideAudio();
+        expect(run(audio, input({ power: 1 }), 300).chorus).toBeGreaterThan(0.6);
+
+        // 落到两个门槛（0.36 / 0.52）之间：没有迟滞就该退出副歌，有迟滞则留着。
+        const held = run(audio, input({ power: 0.45 }), 600);
+        expect(held.chorus).toBeGreaterThan(0.6);
+
+        // 真降到主歌水平才退出。
+        expect(run(audio, input({ power: 0.2 }), 900).chorus).toBeLessThan(0.3);
     });
 
     it('reports a smoothed loudness for the momentum', () => {

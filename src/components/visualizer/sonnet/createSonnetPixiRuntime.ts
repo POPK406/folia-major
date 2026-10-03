@@ -1,7 +1,7 @@
 import type { MotionValue } from 'framer-motion';
 import type { AudioBands, SonnetTuning, Theme } from '../../../types';
 import type { SonnetProgram } from './types';
-import { beginTideAnchors, publishTideAnchorFrom, setTideAnchorCanvas } from '../backgrounds/tide/tideAnchorBridge';
+import { beginTideAnchors, publishTideAnchorFrom, resolveGlyphAnchorStrength, setTideAnchorCanvas } from '../backgrounds/tide/tideAnchorBridge';
 import { findSonnetParagraphIndexAtTime } from './sonnetProgram';
 import { buildSonnetIconDataUrl, buildSonnetIconTextureKey, resolveSonnetIconNames } from './sonnetIcons';
 import {
@@ -655,7 +655,7 @@ export class SonnetPixiRuntime {
                 // 逐字发布给 tide：商籁的字画在 Pixi 画布里，DOM 里没有字形，tide 只能靠这条桥
                 // 知道「字现在在哪、亮到什么程度」，水才做得出随字飘散。（见 tideAnchorBridge）
                 if (glyphVisible && !waiting) {
-                    publishTideAnchorFrom(glyph.display, coreAlpha);
+                    publishTideAnchorFrom(glyph.display, resolveGlyphAnchorStrength(time, glyph.startTime, glyph.settleTime));
                 }
                 if (glyph.halo) {
                     glyph.halo.alpha = haloAlpha;

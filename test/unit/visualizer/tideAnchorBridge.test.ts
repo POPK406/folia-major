@@ -9,9 +9,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
     beginTideAnchors,
     clearTideAnchors,
+    GLYPH_ANCHOR_LEAD,
+    GLYPH_ANCHOR_TAIL,
     publishTideAnchorFrom,
     pushTideAnchor,
     readTideAnchors,
+    resolveGlyphAnchorStrength,
     setTideAnchorCanvas,
 } from '@/components/visualizer/backgrounds/tide/tideAnchorBridge';
 import { LyricAnchorSampler } from '@/components/visualizer/backgrounds/tide/LyricAnchorSampler';
@@ -111,6 +114,42 @@ describe('tideAnchorBridge', () => {
         publishTideAnchorFrom({ getGlobalPosition: () => ({ x: 30, y: 40 }) }, 0.5);
         expect(readTideAnchors()?.count).toBe(1);
         expect(readTideAnchors()?.anchors[0]).toEqual({ x: 30, y: 40, strength: 0.5 });
+    });
+});
+
+describe('glyph anchor strength', () => {
+    it('stays lit for the whole glyph span and falls away outside it', () => {
+        // 字自己的时段内恒为 1：一个长音期间锚点必须一直在线上。
+        expect(resolveGlyphAnchorStrength(1, 1, 3)).toBe(1);
+        expect(resolveGlyphAnchorStrength(2, 1, 3)).toBe(1);
+        expect(resolveGlyphAnchorStrength(3, 1, 3)).toBe(1);
+        // 时段外按前导/拖尾单调淡出。
+        expect(resolveGlyphAnchorStrength(1 - GLYPH_ANCHOR_LEAD, 1, 3)).toBeCloseTo(0, 6);
+        expect(resolveGlyphAnchorStrength(3 + GLYPH_ANCHOR_TAIL, 1, 3)).toBeCloseTo(0, 6);
+        expect(resolveGlyphAnchorStrength(0.95, 1, 3)).toBeGreaterThan(0);
+        expect(resolveGlyphAnchorStrength(0.95, 1, 3)).toBeLessThan(1);
+        // 前导段是渐强：越接近字自己的时段越强（进到时段内就是 1）。
+        expect(resolveGlyphAnchorStrength(0.98, 1, 3)).toBeGreaterThan(resolveGlyphAnchorStrength(0.95, 1, 3));
+    });
+
+    it('drops a glyph that is long past, instead of parking at alpha 1 like the sprite does', () => {
+        // 这正是「水钉在行首不跟着唱」的根因：alpha 唱完仍是 1，时间包络会掉出去。
+        expect(resolveGlyphAnchorStrength(6, 1, 3)).toBeLessThan(0.02);
+        expect(resolveGlyphAnchorStrength(0, 1, 3)).toBe(0);
+    });
+
+    it('lets the sampler keep the glyph being sung rather than the first few in publishing order', () => {
+        setTideAnchorCanvas(buildCanvas());
+        beginTideAnchors();
+        // 行首两个字早就唱完了（强度掉到 0），正在唱的是最后一个。以前强度取 alpha 时，
+        // 前两个字 alpha 仍是 1，会被一直选中 -> 水钉在行首。
+        pushTideAnchor(0, 0, resolveGlyphAnchorStrength(5, 0, 1));
+        pushTideAnchor(10, 0, resolveGlyphAnchorStrength(5, 1, 2));
+        pushTideAnchor(250, 125, resolveGlyphAnchorStrength(5, 4.5, 6));
+
+        const samples = sample();
+        expect(samples).toHaveLength(1);
+        expect(samples[0].key).toBe('bridge:2');
     });
 });
 

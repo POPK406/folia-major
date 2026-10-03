@@ -118,17 +118,17 @@ describe('LyricAnchorSampler bridged anchors', () => {
     it('maps canvas pixels into stage coordinates through the canvas own rect', () => {
         setTideAnchorCanvas(buildCanvas());
         beginTideAnchors();
-        // 画布左上 → 屏幕 (100, 50) → 舞台 (0.1, 0.05)
+        // 画布左上 → 屏幕 (100, 50) → 舞台 x 0.1；y 要翻成「屏幕向上」→ 0.95
         pushTideAnchor(0, 0, 0.9);
-        // 画布中心 → 屏幕 (350, 175) → 舞台 (0.35, 0.175)
+        // 画布中心 → 屏幕 (350, 175) → 舞台 x 0.35；y → 1 - 0.175 = 0.825
         pushTideAnchor(250, 125, 0.8);
 
         const samples = sample();
         expect(samples).toHaveLength(2);
         expect(samples[0].x).toBeCloseTo(0.1, 6);
-        expect(samples[0].y).toBeCloseTo(0.05, 6);
+        expect(samples[0].y).toBeCloseTo(0.95, 6);
         expect(samples[1].x).toBeCloseTo(0.35, 6);
-        expect(samples[1].y).toBeCloseTo(0.175, 6);
+        expect(samples[1].y).toBeCloseTo(0.825, 6);
         // 位置照报，速度留给下游滤波。
         expect(samples[0].vx).toBe(0);
         expect(samples[0].vy).toBe(0);

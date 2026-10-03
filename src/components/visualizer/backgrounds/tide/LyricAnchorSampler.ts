@@ -131,7 +131,9 @@ export class LyricAnchorSampler {
             samples.push({
                 key: `bridge:${index}`,
                 x: (rect.left + anchor.x - input.bounds.left) / input.bounds.width,
-                y: (rect.top + anchor.y - input.bounds.top) / input.bounds.height,
+                // tide 的锚点 y 是「屏幕向上」的（DOM 字形与标记两条路径都是 1 - 顶向下比例），
+                // 而画布像素是顶向下 —— 这里必须翻一次，否则整组锚点会上下镜像。
+                y: 1 - (rect.top + anchor.y - input.bounds.top) / input.bounds.height,
                 vx: 0,
                 vy: 0,
                 strength,

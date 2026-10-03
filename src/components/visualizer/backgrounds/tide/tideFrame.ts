@@ -210,9 +210,12 @@ export const renderTideFrame = (
         u_chop: clamp(tuning.chop, 0, 1.5),
         u_stretch: WAVE_STRETCH,
         u_relief: GLINT_RELIEF,
-        u_glint_power: GLINT_POWER_BASE + intensity * GLINT_POWER_PER_INTENSITY,
+        // 高光的「紧度」和对比度是水面自身的属性，不该跟着「推力强度」一起收紧：
+        // intensity 只管推水与染色，让它继续收窄高光会把浪尖收成一层亚像素级的碎点，
+        // 逐帧重采样就是闪。所以这两项里 intensity 的贡献封顶在 1。
+        u_glint_power: GLINT_POWER_BASE + Math.min(intensity, 1) * GLINT_POWER_PER_INTENSITY,
         u_glint: clamp(tuning.glintStrength, 0, 2.5) * (0.75 + intensity * 0.25),
-        u_contrast: CONTRAST_BASE + intensity * CONTRAST_PER_INTENSITY,
+        u_contrast: CONTRAST_BASE + Math.min(intensity, 1) * CONTRAST_PER_INTENSITY,
         u_perspective: clamp(tuning.perspective, 0, 1),
         u_fog: clamp(tuning.fog, 0, 1),
         u_intro: params.intro,

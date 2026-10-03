@@ -28,8 +28,10 @@ export interface TideRect {
 const TIDE_SKIPPED_SELECTOR = 'canvas,svg,[data-tide-skip-anchor]';
 
 /**
- * 前台可视化暴露的「动态标记」锚点（波环的播放头 + 交界处那股向量），
- * 见 VisualizerWaveform。canvas 类可视化没有文字 DOM，用这些标记代替歌词字形。
+ * 前台可视化暴露的「动态标记」锚点（data-tide-playhead / data-tide-jet）。
+ * canvas 类可视化没有文字 DOM，在自己的容器里放零尺寸标记代替歌词字形 ——
+ * 内置 canvas 模式走 tideAnchorBridge，这条 DOM 标记通道留给外置模组
+ * （模组读不到宿主模块状态，DOM 标记是它们唯一能发布的通道）。
  */
 export const TIDE_MARK_SELECTOR = '[data-tide-playhead],[data-tide-jet]';
 

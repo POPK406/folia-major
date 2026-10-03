@@ -58,17 +58,24 @@ vec3 tideWave(float angle, float length, float height, float shift, vec2 world, 
     return vec3(height * wave, slope * heading);
 }
 
-// One beat ring: a soft crest band expanding from (x, y). The slot is a vec4 (x, y, ageSeconds,
+// One beat ring: a crest travelling outwards from (x, y). The slot is a vec4 (x, y, ageSeconds,
 // strength); strength 0 means nothing is playing there, and the caller already folded the ring's
 // life decay into the strength - so this is one multiply-based falloff: no pow, one exp.
-// The band is deliberately wide: a narrow ridge collapses into a razor-thin grazing highlight, and
-// that line is resampled every frame as the ring grows - which reads as a flicker.
+// Dispersion: a real ripple widens as it travels. That is both what makes it read as water and
+// what keeps the ridge from collapsing into the razor-thin highlight that flickers.
 float tideRing(vec2 uv, vec4 pulse) {
     if (pulse.w <= 0.001) {
         return 0.0;
     }
-    float spread = (distance(uv, pulse.xy) - pulse.z * 0.5) * 13.0;
-    return exp(-spread * spread) * pulse.w;
+    float radius = pulse.z * 0.5;
+    float width = 0.09 + radius * 0.12;
+    float spread = (distance(uv, pulse.xy) - radius) / max(width, 0.02);
+    // A crest with a trough trailing behind it. A plain Gaussian bump reads as a bright blob
+    // rather than as water: the trough is what turns it into a travelling wave, and it is what
+    // darkens the band just inside the crest.
+    float crest = exp(-spread * spread);
+    float trough = exp(-(spread + 2.4) * (spread + 2.4)) * 0.55;
+    return (crest - trough) * pulse.w;
 }
 
 // The lyric pool: (x, y, strength, unused). A ridge along the line of text, tight above and spread
@@ -148,7 +155,7 @@ void main() {
     // The ring and the lyric ridge are mostly *height*: they raise real crests so the shine comes
     // from the water's own lighting. Only a little is handed to the glow, otherwise the sea washes
     // out into a flat spotlight.
-    height += min(ringField, 1.2) * 0.32 + min(focusField, 1.5) * 0.85;
+    height += min(ringField, 1.2) * 0.55 + min(focusField, 1.5) * 0.85;
     float total = 2.82 * (1.0 + steep);
     float level = clamp(0.5 + 0.5 * height / (total * 0.85) + breath * 0.06, 0.0, 1.0);
 
@@ -171,7 +178,7 @@ void main() {
     float glint = (crest * crest * 0.35 + spec * 1.5) * u_glint * (1.0 + u_treble * 0.75) * haze;
     light += glint * 0.55;
     float glow = 1.0 - exp(-max(ink, 0.0) * u_ink * 1.6);
-    glow = clamp(glow + min(ringField, 1.2) * 0.18 + min(focusField, 1.5) * 0.25, 0.0, 1.0);
+    glow = clamp(glow + min(ringField, 1.2) * 0.26 + min(focusField, 1.5) * 0.25, 0.0, 1.0);
     light = 1.0 - (1.0 - clamp(light, 0.0, 1.0)) * (1.0 - glow);
 
     float front = u_intro * 1.35;

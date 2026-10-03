@@ -148,10 +148,13 @@ describe('tide shader contract', () => {
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float inkCarry = 0.55 + clamp(ink, 0.0, 2.0) * 1.15;');
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float focusField = (tideFocus(uv, u_focus0) + tideFocus(uv, u_focus1) + tideFocus(uv, u_focus2)) * inkCarry;');
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('focusField += (tideFocus(uv, u_focus3) + tideFocus(uv, u_focus4) + tideFocus(uv, u_focus5)) * inkCarry;');
-        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('height += min(ringField, 1.2) * 0.32 + min(focusField, 1.5) * 0.85;');
-        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('glow = clamp(glow + min(ringField, 1.2) * 0.18 + min(focusField, 1.5) * 0.25, 0.0, 1.0);');
-        // 节拍环的带宽要软：窄脊会收成一条极细的掠射亮线，环往外扩时不断重采样 = 闪烁。
-        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float spread = (distance(uv, pulse.xy) - pulse.z * 0.5) * 13.0;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('height += min(ringField, 1.2) * 0.55 + min(focusField, 1.5) * 0.85;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('glow = clamp(glow + min(ringField, 1.2) * 0.26 + min(focusField, 1.5) * 0.25, 0.0, 1.0);');
+        // 节拍环必须是「峰 + 后随谷」的一列波，并且随半径色散变宽：
+        // 单高斯只读作一团亮斑，而且窄脊会收成极细的掠射亮线，逐帧重采样就闪。
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float width = 0.09 + radius * 0.12;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float trough = exp(-(spread + 2.4) * (spread + 2.4)) * 0.55;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('return (crest - trough) * pulse.w;');
     });
 
     it('never draws slats: the surface paints one continuous field', () => {

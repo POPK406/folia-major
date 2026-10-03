@@ -1147,10 +1147,10 @@ export const DEFAULT_SORA_BACKGROUND_TUNING: SoraBackgroundTuning = {
 };
 
 export const DEFAULT_TIDE_BACKGROUND_TUNING: TideBackgroundTuning = {
-  intensity: 1.15,
+  intensity: 1.7,
   flow: 0.6,
   dissipation: 0.6,
-  spread: 1.3,
+  spread: 0.8,
   followLyrics: true,
   sampleSeconds: 0.18,
   maxAnchors: 6,
@@ -1159,11 +1159,11 @@ export const DEFAULT_TIDE_BACKGROUND_TUNING: TideBackgroundTuning = {
   cameraStrength: 0.45,
   soundReactive: 1,
   lyricLift: 1,
-  waveScale: 1,
+  waveScale: 0.4,
   waveSpeed: 1,
   chop: 0.55,
-  glintStrength: 0.9,
-  fog: 0.35,
+  glintStrength: 0.15,
+  fog: 0.8,
   perspective: 0.55,
   colorMode: 'theme',
   waterColor: '#a855f7',

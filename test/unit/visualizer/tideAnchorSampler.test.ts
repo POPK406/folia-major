@@ -12,6 +12,7 @@ import {
     findTideClusterIndex,
     measureTideGlyphRange,
     normalizeAnchorText,
+    readTideMarkAnchors,
 } from '@/components/visualizer/backgrounds/tide/tideGlyphDom';
 import { LyricAnchorSampler } from '@/components/visualizer/backgrounds/tide/LyricAnchorSampler';
 import type { Line } from '@/types';
@@ -60,6 +61,34 @@ const buildStage = (parts: string[]): HTMLElement => {
         const span = document.createElement('span');
         span.textContent = part;
         stage.appendChild(span);
+    });
+    document.body.appendChild(stage);
+    return stage;
+};
+
+/** 波环式标记（播放头/交界向量）：零尺寸，位置由桩给出，强度与外推方向写在 data 里。 */
+const buildMarkStage = (
+    marks: Array<{ attr: 'playhead' | 'jet'; left: number; top: number; strength?: number; out?: string; push?: number }>,
+): HTMLElement => {
+    document.body.innerHTML = '';
+    const stage = document.createElement('div');
+    marks.forEach(({ attr, left, top, strength = 0.8, out, push }) => {
+        const mark = document.createElement('div');
+        if (attr === 'playhead') {
+            mark.dataset.tidePlayhead = 'true';
+        } else {
+            mark.dataset.tideJet = 'true';
+        }
+        mark.dataset.tideStrength = String(strength);
+        if (out) {
+            mark.dataset.tideOut = out;
+        }
+        if (push !== undefined) {
+            mark.dataset.tidePush = String(push);
+        }
+        // jsdom 不做布局，位置由 getBoundingClientRect 桩直接给出（零尺寸 = left/top 即锚点）。
+        mark.getBoundingClientRect = () => ({ left, top, right: left, bottom: top, width: 0, height: 0, x: left, y: top, toJSON: () => ({}) }) as DOMRect;
+        stage.appendChild(mark);
     });
     document.body.appendChild(stage);
     return stage;
@@ -133,9 +162,123 @@ describe('tideGlyphDom', () => {
 });
 
 describe('LyricAnchorSampler', () => {
-    it('emits nothing without an active line', () => {
+    it('emits nothing without an active line, a playhead mark or timing lyrics', () => {
         const sampler = new LyricAnchorSampler();
         expect(sampler.sample({ stage: null, maxAnchors: 6, bounds: BOUNDS, lines: [], lineIndex: 0, timeSec: 1 })).toEqual([]);
+    });
+
+    it('reads the playhead and jet marks when the visualizer renders no lyric DOM (wave ring)', () => {
+        const stage = buildMarkStage([
+            { attr: 'playhead', left: 400, top: 250, strength: 0.8 },
+            { attr: 'jet', left: 700, top: 600, strength: 0.4, out: '0,1' },
+        ]);
+        const sampler = new LyricAnchorSampler();
+
+        // 没有在唱的行（或纯音乐）：标记锚点顶上来，按 DOM 顺序播放头在前。
+        const silent = sampler.sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [], lineIndex: 0, timeSec: 1 });
+        expect(silent).toHaveLength(2);
+        expect(silent[0]).toMatchObject({ key: 'playhead', x: 0.4, y: 0.75, strength: 0.8, vx: 0, vy: 0 });
+        // 交界向量的 key 带序号 —— 下游按 key 配对，重复 key 会把多个标记折叠成一个。
+        // 屏幕上「向下」的方向（0,1）在流体坐标里仍是向下，所以 pushY 取反成 -1。
+        expect(silent[1]).toMatchObject({ key: 'jet:0', x: 0.7, y: 0.4, strength: 0.4, pushX: 0, pushY: -1 });
+
+        // 有在唱的行但前台没有文字 DOM（canvas 模式）：标记锚点替换时序兜底。
+        const line = makeLine([['A', 1, 1.5]]);
+        const singing = sampler.sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [line], lineIndex: 0, timeSec: 1.2 });
+        expect(singing.map(sample => sample.key)).toEqual(['playhead', 'jet:0']);
+        expect(singing[0].x).toBeCloseTo(0.4, 5);
+    });
+
+    it('gives every jet mark a distinct key so none are collapsed downstream', () => {
+        const stage = buildMarkStage([
+            { attr: 'playhead', left: 400, top: 250 },
+            { attr: 'jet', left: 100, top: 100 },
+            { attr: 'jet', left: 500, top: 300 },
+            { attr: 'jet', left: 800, top: 700 },
+        ]);
+        const sampler = new LyricAnchorSampler();
+        const samples = sampler.sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [], lineIndex: 0, timeSec: 1 });
+        const keys = samples.map(sample => sample.key);
+        expect(keys).toEqual(['playhead', 'jet:0', 'jet:1', 'jet:2']);
+        expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it('caps mark anchors at maxAnchors, keeping DOM order (playhead first)', () => {
+        const stage = buildMarkStage([
+            { attr: 'playhead', left: 400, top: 250 },
+            { attr: 'jet', left: 700, top: 600 },
+        ]);
+        const sampler = new LyricAnchorSampler();
+        const samples = sampler.sample({ stage, maxAnchors: 1, bounds: BOUNDS, lines: [], lineIndex: 0, timeSec: 1 });
+        expect(samples.map(sample => sample.key)).toEqual(['playhead']);
+    });
+
+    it('keeps DOM lyric anchors in charge when text glyphs exist', () => {
+        stubGlyphRects();
+        // 同一个 stage 里既有文字又有标记：文字锚点优先，标记不插队。
+        const stage = buildStage(['ABCD']);
+        const mark = document.createElement('div');
+        mark.dataset.tidePlayhead = 'true';
+        stage.appendChild(mark);
+
+        const sampler = new LyricAnchorSampler();
+        const line = makeLine([['A', 1, 1.5], ['B', 1.5, 2]]);
+        const samples = sampler.sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [line], lineIndex: 0, timeSec: 1.2 });
+
+        expect(samples.map(sample => sample.key)).toEqual(['dom:0', 'dom:1']);
+    });
+
+    it('ignores marks that sit far outside the stage', () => {
+        const stage = buildMarkStage([{ attr: 'playhead', left: 5000, top: -5000 }]);
+        expect(readTideMarkAnchors(stage, BOUNDS)).toEqual([]);
+
+        const sampler = new LyricAnchorSampler();
+        const line = makeLine([['A', 1, 1.5]]);
+        // 退回时序兜底（标记越界视为没有标记）。
+        const samples = sampler.sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [line], lineIndex: 0, timeSec: 1.2 });
+        expect(samples.map(sample => sample.key)).toEqual(['timing:0']);
+    });
+
+    it('falls back to a neutral strength when a mark reports garbage', () => {
+        const stage = buildMarkStage([{ attr: 'jet', left: 300, top: 300, strength: Number.NaN }]);
+        const anchors = readTideMarkAnchors(stage, BOUNDS);
+        expect(anchors).toHaveLength(1);
+        expect(anchors[0].strength).toBe(0.5);
+        // 没有 data-tide-out 就是纯固定点：不额外推水。
+        expect(anchors[0].outX).toBe(0);
+        expect(anchors[0].outY).toBe(0);
+    });
+
+    it('normalizes a garbage outward direction to zero so a bad mark cannot shove the fluid', () => {
+        const stage = buildMarkStage([
+            { attr: 'jet', left: 300, top: 300, out: 'nonsense' },
+            { attr: 'jet', left: 400, top: 300, out: '0,0' },
+            { attr: 'jet', left: 500, top: 300, out: '3,4' },
+        ]);
+        const anchors = readTideMarkAnchors(stage, BOUNDS);
+        expect(anchors[0].outX).toBe(0);
+        expect(anchors[0].outY).toBe(0);
+        expect(anchors[1].outX).toBe(0);
+        expect(anchors[1].outY).toBe(0);
+        // (3,4) 是斜边 5 的直角三角形：归一化后就是 (0.6, 0.8)。
+        expect(anchors[2].outX).toBeCloseTo(0.6, 6);
+        expect(anchors[2].outY).toBeCloseTo(0.8, 6);
+    });
+
+    it('scales the self-reported direction by the self-reported momentum (data-tide-push)', () => {
+        // 方向固定、大小随音乐：动量 0.25 就是四分之一股推力。
+        const stage = buildMarkStage([{ attr: 'jet', left: 400, top: 400, out: '1,0', push: 0.25 }]);
+        const [anchor] = readTideMarkAnchors(stage, BOUNDS);
+        expect(anchor.outX).toBeCloseTo(1, 6);
+        expect(anchor.push).toBeCloseTo(0.25, 6);
+
+        const [sample] = new LyricAnchorSampler()
+            .sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [], lineIndex: 0, timeSec: 1 });
+        expect(sample.pushX).toBeCloseTo(0.25, 6);
+        expect(sample.pushY).toBeCloseTo(0, 6);
+        // 缺省动量是满推力；坏值归零，不会换来一股满推力。
+        expect(readTideMarkAnchors(buildMarkStage([{ attr: 'jet', left: 300, top: 300, out: '1,0' }]), BOUNDS)[0].push).toBe(1);
+        expect(readTideMarkAnchors(buildMarkStage([{ attr: 'jet', left: 300, top: 300, out: '1,0', push: Number.NaN }]), BOUNDS)[0].push).toBe(0);
     });
 
     it('ignores words that are far outside their timing window', () => {

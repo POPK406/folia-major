@@ -74,6 +74,7 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     partitaTuning: storeVisualizer.partitaTuning,
     fumeTuning: storeVisualizer.fumeTuning,
     claddaghTuning: storeVisualizer.claddaghTuning,
+    waveformTuning: storeVisualizer.waveformTuning,
     cappellaTuning: storeVisualizer.cappellaTuning,
     tiltTuning: storeVisualizer.tiltTuning,
     dioramaTuning: storeVisualizer.dioramaTuning,

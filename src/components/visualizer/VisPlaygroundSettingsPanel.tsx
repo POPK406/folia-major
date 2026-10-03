@@ -19,6 +19,7 @@ import {
     type TiltTuning,
     type DioramaTuning,
     type VisualizerMode,
+    type WaveformTuning,
 } from '../../types';
 import { colorWithAlpha } from './colorMix';
 import FontFallbackStackControl from './FontFallbackStackControl';
@@ -115,6 +116,8 @@ interface VisPlaygroundSettingsPanelProps {
     onTemperaTuningChange?: (patch: Partial<TemperaTuning>) => void;
     lumiereTuning?: LumiereTuning;
     onLumiereTuningChange?: (patch: Partial<LumiereTuning>) => void;
+    waveformTuning?: WaveformTuning;
+    onWaveformTuningChange?: (patch: Partial<WaveformTuning>) => void;
     cappellaTuning: CappellaTuning;
     cappellaCustomEmojiImages: CappellaEmojiImage[];
     onCappellaTuningChange?: (patch: Partial<CappellaTuning>) => void;
@@ -388,6 +391,8 @@ const VisPlaygroundSettingsPanel: React.FC<VisPlaygroundSettingsPanelProps> = (p
         onTemperaTuningChange,
         lumiereTuning,
         onLumiereTuningChange,
+        waveformTuning,
+        onWaveformTuningChange,
         monetPortraitImage,
         onUploadMonetPortraitImage,
         onClearMonetPortraitImage,
@@ -763,6 +768,8 @@ const VisPlaygroundSettingsPanel: React.FC<VisPlaygroundSettingsPanelProps> = (p
                             onTemperaTuningChange,
                             lumiereTuning,
                             onLumiereTuningChange,
+                            waveformTuning,
+                            onWaveformTuningChange,
                             monetPortraitImage,
                             onUploadMonetPortraitImage,
                             onClearMonetPortraitImage,

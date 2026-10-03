@@ -4,7 +4,9 @@ import {
     findTideClusterIndex,
     measureTideGlyphRange,
     normalizeAnchorText,
+    readTideMarkAnchors,
 } from './tideGlyphDom';
+import { readTideAnchors } from './tideAnchorBridge';
 
 // src/components/visualizer/backgrounds/tide/LyricAnchorSampler.ts
 // Answers "where are the lyrics right now" for the tide background: it measures the foreground
@@ -12,7 +14,8 @@ import {
 // into an anchor (a position and a strength). It deliberately reports no velocity - a per-sample
 // difference is far too noisy to push water with - so the motion is derived downstream from the
 // smoothly filtered position (tideSplats.glideTideAnchors). Canvas-only visualizers expose no text
-// nodes, so they degrade to a timing-driven synthetic anchor.
+// nodes: the wave ring publishes its playhead and its ring of melt emitters through DOM marks
+// instead, and other canvas modes degrade to a timing-driven synthetic anchor.
 
 export interface TideAnchorSample {
     key: string;
@@ -21,6 +24,13 @@ export interface TideAnchorSample {
     vx: number;
     vy: number;
     strength: number;
+    /**
+     * 自报的固定外推推力（流体坐标系：x 向右、y 向上，方向已单位化）。
+     * 静止的融环发射点靠它把染料推离环面 —— 这是位置与强度之外的第三个通道；
+     * 文字锚点不带它（缺省 0，推力仍只来自下游滤波出的移动速度）。
+     */
+    pushX?: number;
+    pushY?: number;
 }
 
 export interface TideAnchorInput {
@@ -64,20 +74,106 @@ const envelopeOf = (word: Word, timeSec: number): number => {
 /** 无状态：它只回答"字现在在哪"，运动交给下游滤波。 */
 export class LyricAnchorSampler {
     sample(input: TideAnchorInput): TideAnchorSample[] {
+        // canvas 类可视化（商籁 / 绘光）主动发布的逐字锚点最准：它们知道自己的字在哪。
+        const bridged = this.bridgedAnchors(input);
+        if (bridged.length > 0) {
+            return bridged;
+        }
+
         const line = input.lines[input.lineIndex];
         if (!line || !line.words || line.words.length === 0) {
-            return [];
+            // 没在唱的行也要问一次标记：canvas 类可视化（波环）的「现在」还在环上走。
+            return this.markAnchors(input);
         }
 
         const clusters = this.pickClusters(line, input.timeSec, input.maxAnchors);
         if (clusters.length === 0) {
-            return [];
+            return this.markAnchors(input);
         }
 
         const measured = this.measureClusters(input, clusters);
-        return measured.length > 0
-            ? measured
-            : this.syntheticClusters(input, line, clusters);
+        if (measured.length > 0) {
+            return measured;
+        }
+
+        const synthetic = this.syntheticClusters(input, line, clusters);
+        // 时序兜底锚点不知道前台画面长什么样；标记锚点知道。有标记就用标记，
+        // 让波环这类 canvas 可视化的水面跟着真实的「现在」和流势走，而不是跟着估算的基线走。
+        const marks = this.markAnchors(input);
+        return marks.length > 0 ? marks : synthetic;
+    }
+
+    /**
+     * canvas 类可视化（商籁 / 绘光）经 tideAnchorBridge 发布的逐字锚点。
+     * 它们报的是**画布逻辑像素**，这里用画布自己的 rect 折算到舞台坐标 —— 与 DPR、画布在
+     * 舞台里的偏移都无关。强度取模式报的活跃度（通常就是该字当帧的 alpha），未唱/未亮起的
+     * 字强度≈0 直接丢掉；超上限时优先保留最亮的那些。
+     */
+    private bridgedAnchors(input: TideAnchorInput): TideAnchorSample[] {
+        const frame = readTideAnchors();
+        if (!frame || input.bounds.width <= 1 || input.bounds.height <= 1) {
+            return [];
+        }
+
+        const rect = frame.canvas.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            return [];
+        }
+
+        const limit = Math.round(clamp(Number.isFinite(input.maxAnchors) ? input.maxAnchors : MAX_CLUSTERS, 1, MAX_CLUSTERS));
+        const samples: TideAnchorSample[] = [];
+        for (let index = 0; index < frame.count; index += 1) {
+            const anchor = frame.anchors[index];
+            const strength = clamp(anchor.strength, 0, 1);
+            if (strength <= 0.02) {
+                continue;
+            }
+            samples.push({
+                key: `bridge:${index}`,
+                x: (rect.left + anchor.x - input.bounds.left) / input.bounds.width,
+                y: (rect.top + anchor.y - input.bounds.top) / input.bounds.height,
+                vx: 0,
+                vy: 0,
+                strength,
+            });
+        }
+
+        // 只留最亮的若干个。同一行上已唱到的字强度相同，靠原生稳定排序保证每帧挑的是同一批 ——
+        // 否则 key 每帧换一批，下游滑行滤波会把它们当成新锚点反复重新淡入（抖）。
+        samples.sort((a, b) => b.strength - a.strength);
+        return samples.slice(0, limit);
+    }
+
+    /**
+     * 前台可视化暴露的动态标记锚点（[data-tide-playhead]）。
+     * 有文字 DOM 的模式下不参与（歌词字形已经足够），只在 canvas 模式（波环）下顶上来 ——
+     * 播放头给「现在」，并自报一股沿环切向（斜左下）、动量随音乐而变的推力，
+     * 与文字锚点同一套向量标准：位置 + 强度照报，方向与动量由渲染层经 data-tide-out /
+     * data-tide-push 自报。
+     */
+    private markAnchors(input: TideAnchorInput): TideAnchorSample[] {
+        if (!input.stage || input.bounds.width <= 1 || input.bounds.height <= 1) {
+            return [];
+        }
+
+        const marks = readTideMarkAnchors(input.stage, input.bounds);
+        if (marks.length === 0) {
+            return [];
+        }
+
+        const limit = Math.round(clamp(Number.isFinite(input.maxAnchors) ? input.maxAnchors : MAX_CLUSTERS, 1, MAX_CLUSTERS));
+        return marks.slice(0, limit).map(mark => ({
+            key: mark.key,
+            x: mark.x,
+            y: mark.y,
+            vx: 0,
+            vy: 0,
+            strength: mark.strength,
+            // 屏幕坐标 y 向下、流体坐标 y 向上：方向向量的 y 取反；
+            // 再乘自报的推力大小（动量），于是同一个方向能随音乐变强变弱。
+            pushX: mark.outX * mark.push,
+            pushY: -mark.outY * mark.push,
+        }));
     }
 
     /** 逐字：每个还在发声（含前后淡入淡出）的词都是一个锚点；超上限时优先保留唱得最重的那些。 */

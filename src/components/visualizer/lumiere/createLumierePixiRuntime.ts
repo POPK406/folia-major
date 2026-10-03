@@ -13,6 +13,7 @@ import {
     toLumiereSceneTuning,
 } from './lumiereRuntimeTuning';
 import { resolveLumiereSceneFrames } from './lumiereSceneFrames';
+import { beginTideAnchors, setTideAnchorCanvas } from '../backgrounds/tide/tideAnchorBridge';
 import {
     applyLumiereLayerFrame,
     applyLumiereSceneQuality,
@@ -160,6 +161,7 @@ export class LumierePixiRuntime {
     private install() {
         this.resizeToHost(true);
         this.app.ticker.add(this.renderFrame);
+        setTideAnchorCanvas(this.app.canvas);
         this.resizeObserver = new ResizeObserver(() => {
             if (this.destroyed || !this.resizeToHost(false)) return;
             if (this.options.paused) this.renderOnce();
@@ -318,6 +320,9 @@ export class LumierePixiRuntime {
         const lyricAlpha = creditsFrame.active ? creditsFrame.lyricAlpha : 1;
         const lyricBlur = creditsFrame.active ? creditsFrame.lyricBlur : 0;
         const blurResolution = this.renderResolution * 0.5;
+        // 本帧重开锚点列表：字在下面 unit.update 里逐个发布，tide 侧的取样频率与这里无关。
+        beginTideAnchors();
+
         this.sceneCache.forEach((entry, index) => {
             const layer = layerByIndex.get(index);
             const alpha = (layer?.alpha ?? 0) * lyricAlpha;

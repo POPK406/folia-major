@@ -1,0 +1,90 @@
+// src/components/visualizer/backgrounds/tide/tideAnchorBridge.ts
+//
+// canvas 类可视化（商籁 / 绘光）把自己的逐字位置发布到这里，tide 在取样时读取。
+//
+// 存在的理由：这两个模式把歌词画在 Pixi/WebGL 画布内，DOM 里没有字形，而 tide 的字形采集
+// 明确跳过 canvas 子树 —— 它们对 tide 完全不可见，只能退化成时序合成锚点，水面于是和字
+// 毫无关系。这条桥让它们像波环报 data-tide-playhead 一样，把自己的位置主动报出来。
+//
+// 约定：x / y 是**画布逻辑像素**（原点在画布左上、y 向下），strength 是该字当前的活跃度
+// （0..1，通常取它当帧的实际 alpha）。tide 侧只用画布的 CSS rect 折算到舞台坐标，
+// 因此与 DPR、画布在舞台里的偏移都无关。
+
+export interface TideBridgeAnchor {
+    x: number;
+    y: number;
+    strength: number;
+}
+
+export interface TideBridgeFrame {
+    canvas: HTMLCanvasElement;
+    count: number;
+    anchors: readonly TideBridgeAnchor[];
+}
+
+/** 一帧最多发布多少个逐字锚点。真实需求远小于此，纯粹防失控。 */
+const MAX_BRIDGE_ANCHORS = 512;
+
+/** 预分配槽位：每帧只是覆写数字，不产生任何临时对象。 */
+const slots: TideBridgeAnchor[] = [];
+for (let index = 0; index < MAX_BRIDGE_ANCHORS; index += 1) {
+    slots.push({ x: 0, y: 0, strength: 0 });
+}
+
+let canvas: HTMLCanvasElement | null = null;
+let count = 0;
+
+/** 模式挂载时登记自己的画布；卸载时传 null。 */
+export const setTideAnchorCanvas = (next: HTMLCanvasElement | null): void => {
+    canvas = next;
+    count = 0;
+};
+
+/** 每帧开头调用一次（由模式自己的 renderFrame 调），重开本帧的锚点列表。 */
+export const beginTideAnchors = (): void => {
+    count = 0;
+};
+
+/** 发布一个逐字锚点：画布逻辑像素 + 该字当前的活跃度。 */
+export const pushTideAnchor = (x: number, y: number, strength: number): void => {
+    if (count >= MAX_BRIDGE_ANCHORS) {
+        return;
+    }
+
+    const slot = slots[count];
+    slot.x = x;
+    slot.y = y;
+    slot.strength = strength;
+    count += 1;
+};
+
+/** 某个字形容器的最小契约：只要能把「自己在屏幕上的位置」答出来就行。 */
+export interface TideAnchorTarget {
+    getGlobalPosition?: () => { x: number; y: number };
+}
+
+/**
+ * 从一个 Pixi 字形容器发布锚点。
+ * 防御式：拿不到全局位置（桩对象、已销毁的节点）或强度≈0（未唱/未亮起）时直接跳过 ——
+ * 这条桥永远不该让渲染层崩掉。
+ */
+export const publishTideAnchorFrom = (target: TideAnchorTarget | null, strength: number): void => {
+    if (!target || typeof target.getGlobalPosition !== 'function' || !(strength > 0.02)) {
+        return;
+    }
+
+    const global = target.getGlobalPosition();
+    pushTideAnchor(global.x, global.y, strength);
+};
+
+/** 模式卸载时清空，避免下一个模式读到上一个模式留下的位置。 */
+export const clearTideAnchors = (): void => {
+    canvas = null;
+    count = 0;
+};
+
+/** 本帧有没有可用的逐字锚点；没有就返回 null，调用方自然走原有路径。
+ *  画布已经脱离文档（模式已卸载）时也返回 null —— 这样模式侧不必写清理逻辑。 */
+export const readTideAnchors = (): TideBridgeFrame | null => (
+    canvas && canvas.isConnected && count > 0 ? { canvas, count, anchors: slots } : null
+);

@@ -27,6 +27,7 @@ export const BUILTIN_VISUALIZER_MODES = [
     'still',
     'tempera',
     'tilt',
+    'waveform',
 ] as const;
 
 export const BUILTIN_VISUALIZER_BACKGROUND_MODES = [

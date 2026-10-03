@@ -58,14 +58,16 @@ vec3 tideWave(float angle, float length, float height, float shift, vec2 world, 
     return vec3(height * wave, slope * heading);
 }
 
-// One beat ring: a narrow crest expanding from (x, y). The slot is a vec4 (x, y, ageSeconds,
+// One beat ring: a soft crest band expanding from (x, y). The slot is a vec4 (x, y, ageSeconds,
 // strength); strength 0 means nothing is playing there, and the caller already folded the ring's
 // life decay into the strength - so this is one multiply-based falloff: no pow, one exp.
+// The band is deliberately wide: a narrow ridge collapses into a razor-thin grazing highlight, and
+// that line is resampled every frame as the ring grows - which reads as a flicker.
 float tideRing(vec2 uv, vec4 pulse) {
     if (pulse.w <= 0.001) {
         return 0.0;
     }
-    float spread = (distance(uv, pulse.xy) - pulse.z * 0.5) * 20.0;
+    float spread = (distance(uv, pulse.xy) - pulse.z * 0.5) * 13.0;
     return exp(-spread * spread) * pulse.w;
 }
 
@@ -146,7 +148,7 @@ void main() {
     // The ring and the lyric ridge are mostly *height*: they raise real crests so the shine comes
     // from the water's own lighting. Only a little is handed to the glow, otherwise the sea washes
     // out into a flat spotlight.
-    height += min(ringField, 1.2) * 0.55 + min(focusField, 1.5) * 0.85;
+    height += min(ringField, 1.2) * 0.32 + min(focusField, 1.5) * 0.85;
     float total = 2.82 * (1.0 + steep);
     float level = clamp(0.5 + 0.5 * height / (total * 0.85) + breath * 0.06, 0.0, 1.0);
 
@@ -169,7 +171,7 @@ void main() {
     float glint = (crest * crest * 0.35 + spec * 1.5) * u_glint * (1.0 + u_treble * 0.75) * haze;
     light += glint * 0.55;
     float glow = 1.0 - exp(-max(ink, 0.0) * u_ink * 1.6);
-    glow = clamp(glow + min(ringField, 1.2) * 0.35 + min(focusField, 1.5) * 0.25, 0.0, 1.0);
+    glow = clamp(glow + min(ringField, 1.2) * 0.18 + min(focusField, 1.5) * 0.25, 0.0, 1.0);
     light = 1.0 - (1.0 - clamp(light, 0.0, 1.0)) * (1.0 - glow);
 
     float front = u_intro * 1.35;
@@ -183,8 +185,14 @@ void main() {
     float tint = clamp(max(glint * 1.15, glow * 0.5) + sweep, 0.0, 1.0);
     vec3 tinted = mix(u_surface, u_glint_color, tint);
     vec3 color = mix(u_background, tinted, clamp(light, 0.0, 1.0));
-    // A soft glow marks where the lyrics stirred the water.
-    color += u_glow_color * glow * 0.12;
+    // A soft glow marks where the lyrics stirred the water. The dye is tinted by the spectrum: the
+    // low end pushes it warm, the high end pushes it cool, so the colour flows with the music.
+    float lowBand = clamp(u_bass, 0.0, 1.5);
+    float midBand = clamp(u_mid, 0.0, 1.5);
+    float highBand = clamp(u_treble, 0.0, 1.5);
+    float warmth = clamp(lowBand - highBand * 0.6, -1.0, 1.0);
+    vec3 glowTint = vec3(1.0 + warmth * 0.35, 1.0 + midBand * 0.06, 1.0 - warmth * 0.30);
+    color += u_glow_color * glow * 0.12 * glowTint;
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
 `;

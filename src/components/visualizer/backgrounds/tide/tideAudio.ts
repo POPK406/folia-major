@@ -4,8 +4,8 @@
 // so it is obvious that nothing here ever pushes the fluid solver around (that is what turned the
 // old audio-reactive mode into a jittering mess). Everything below only shapes the water surface.
 
-/** How many beat rings can be alive at once. */
-export const TIDE_PULSE_COUNT = 3;
+/** How many beat rings can be alive at once. 少一层：多层薄脊叠加时会互相穿过、读出闪烁。 */
+export const TIDE_PULSE_COUNT = 2;
 /** How many lyric clusters the surface can lift at once (matches the anchor cap). */
 export const TIDE_FOCUS_COUNT = 6;
 
@@ -49,7 +49,7 @@ export interface TideAudioFrame {
 }
 
 /** The surface follows these, so they have to be smooth: a band that snaps every frame reads as a flicker. */
-const BAND_TAU = 0.09;
+const BAND_TAU = 0.22;
 /** The onset detector compares a fast follower against a slow one. */
 const BASS_FAST_TAU = 0.03;
 const BASS_SLOW_TAU = 1.1;
@@ -73,6 +73,19 @@ const BREATH_BASS_FLOOR = 0.35;
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 const approach = (current: number, target: number, dt: number, tau: number): number =>
     current + (target - current) * (1 - Math.exp(-dt / Math.max(tau, 0.01)));
+
+/**
+ * 主播放链路的 analyser 写的是 0..255（见 usePlaybackVisualizerBridge 的 process()：归一后乘回 255），
+ * 预览 / 主题公园写的是 0..1 —— 双刻度。必须按这个规则归一：直接 `clamp(x, 0, 1)` 会把 0..255 全压成 1，
+ * 于是低频/中频/高频、响度、鼓点检测全部冻在最大值（水面看起来和音乐毫无关系），
+ * 安静段数值在 1.0 上下穿时还会在 0/1 之间反复跳（水面抽搐）。
+ */
+const normalizeAudio = (value: number): number => {
+    if (!Number.isFinite(value) || value <= 0) {
+        return 0;
+    }
+    return value > 1 ? Math.min(1, value / 255) : value;
+};
 
 interface TideRing {
     x: number;
@@ -100,10 +113,10 @@ export class TideAudio {
     update(input: TideAudioInput): TideAudioFrame {
         const dt = clamp(input.dt, 1 / 240, 1 / 12);
         const source = input.bands;
-        const power = clamp(input.power || 0, 0, 1);
-        const bass = clamp(source ? source.bass : power, 0, 1);
-        const mid = clamp(source ? (source.mid + source.vocal) / 2 : power * 0.6, 0, 1);
-        const treble = clamp(source ? source.treble : power * 0.5, 0, 1);
+        const power = normalizeAudio(input.power || 0);
+        const bass = normalizeAudio(source ? source.bass : power);
+        const mid = normalizeAudio(source ? (source.mid + source.vocal) / 2 : power * 0.6);
+        const treble = normalizeAudio(source ? source.treble : power * 0.5);
 
         const amount = clamp(input.amount, 0, 2);
         const focusAmount = clamp(input.focusAmount, 0, 2);

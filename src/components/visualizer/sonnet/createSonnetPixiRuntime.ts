@@ -1,6 +1,7 @@
 import type { MotionValue } from 'framer-motion';
 import type { AudioBands, SonnetTuning, Theme } from '../../../types';
 import type { SonnetProgram } from './types';
+import { beginTideAnchors, publishTideAnchorFrom, setTideAnchorCanvas } from '../backgrounds/tide/tideAnchorBridge';
 import { findSonnetParagraphIndexAtTime } from './sonnetProgram';
 import { buildSonnetIconDataUrl, buildSonnetIconTextureKey, resolveSonnetIconNames } from './sonnetIcons';
 import {
@@ -17,6 +18,7 @@ import {
     resolveTimelineShake,
 } from './sonnetMotion';
 import { hashSonnetSeed } from './sonnetRandom';
+// src/components/visualizer/sonnet/createSonnetPixiRuntime.ts
 import {
     IDLE_SONNET_TRANSITION_FRAME,
     resolveSonnetEnterTransitionFrame,
@@ -183,6 +185,7 @@ export class SonnetPixiRuntime {
     private install() {
         this.resizeToHost();
         this.app.ticker.add(this.renderFrame);
+        setTideAnchorCanvas(this.app.canvas);
         this.resizeObserver = new ResizeObserver(() => {
             if (this.destroyed || !this.resizeToHost()) return;
             if (this.options.paused) this.renderOnce();
@@ -649,6 +652,11 @@ export class SonnetPixiRuntime {
                 glyph.display.scale.set(scale * depthScale);
                 glyph.display.position.set(x + parallaxX, y + parallaxY);
                 glyph.display.rotation = rotation;
+                // 逐字发布给 tide：商籁的字画在 Pixi 画布里，DOM 里没有字形，tide 只能靠这条桥
+                // 知道「字现在在哪、亮到什么程度」，水才做得出随字飘散。（见 tideAnchorBridge）
+                if (glyphVisible && !waiting) {
+                    publishTideAnchorFrom(glyph.display, coreAlpha);
+                }
                 if (glyph.halo) {
                     glyph.halo.alpha = haloAlpha;
                     glyph.halo.scale.set(scale * (1.08 - glyphProgress * 0.08));
@@ -676,7 +684,10 @@ export class SonnetPixiRuntime {
                 // fade in over the first quarter, then quickly vanish. One-shot.
                 if (glyph.ghosts && glyph.ghostDuration) {
                     const ghostProgress = clamp01((time - glyph.startTime) / glyph.ghostDuration);
-                    const ghostActive = glyphVisible && ghostProgress > 0 && ghostProgress < 1;
+                    // 「只看文字」下回声浮影也属于装饰：一并关闭，保证纯文字演示与截图里没有残影。
+                    const ghostActive = glyphVisible
+                        && !this.options.tuning.showOnlyText
+                        && ghostProgress > 0 && ghostProgress < 1;
                     // Quick fade-in, then a squared falloff so the echo dies fast.
                     const envelope = ghostProgress <= 0.2
                         ? ghostProgress / 0.2
@@ -700,6 +711,8 @@ export class SonnetPixiRuntime {
         // Advanced before the paragraph lookup so a commit lands on this frame's scene selection
         // instead of leaving one frame of the outgoing program on the incoming one.
         this.advanceSongSwap();
+        // 本帧重开锚点列表：字在下面 updateShot 里逐个发布，tide 侧的取样频率与这里无关。
+        beginTideAnchors();
         if (this.options.program.paragraphs.length === 0) {
             sonnetDebugState.activeShot = null;
             sonnetDebugState.paragraphIndex = -1;

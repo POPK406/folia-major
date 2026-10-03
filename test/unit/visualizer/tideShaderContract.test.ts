@@ -114,7 +114,10 @@ describe('tide shader contract', () => {
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('vec3 color = mix(u_background, tinted, clamp(light, 0.0, 1.0));');
         // 歌词搅动的水位抬高：交互和浪面是同一层，不是浮在上面的一团光。
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('level = clamp(level + ink * 0.30, 0.0, 1.0);');
-        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('color += u_glow_color * glow * 0.12;');
+        // 染料辉光按频段染色：低频偏暖、高频偏冷，颜色随音乐流动。
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float warmth = clamp(lowBand - highBand * 0.6, -1.0, 1.0);');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('vec3 glowTint = vec3(1.0 + warmth * 0.35, 1.0 + midBand * 0.06, 1.0 - warmth * 0.30);');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('color += u_glow_color * glow * 0.12 * glowTint;');
     });
 
     it('pans and tilts the whole field with the lyric camera', () => {
@@ -145,8 +148,10 @@ describe('tide shader contract', () => {
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float inkCarry = 0.55 + clamp(ink, 0.0, 2.0) * 1.15;');
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float focusField = (tideFocus(uv, u_focus0) + tideFocus(uv, u_focus1) + tideFocus(uv, u_focus2)) * inkCarry;');
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('focusField += (tideFocus(uv, u_focus3) + tideFocus(uv, u_focus4) + tideFocus(uv, u_focus5)) * inkCarry;');
-        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('height += min(ringField, 1.2) * 0.55 + min(focusField, 1.5) * 0.85;');
-        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('glow = clamp(glow + min(ringField, 1.2) * 0.35 + min(focusField, 1.5) * 0.25, 0.0, 1.0);');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('height += min(ringField, 1.2) * 0.32 + min(focusField, 1.5) * 0.85;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('glow = clamp(glow + min(ringField, 1.2) * 0.18 + min(focusField, 1.5) * 0.25, 0.0, 1.0);');
+        // 节拍环的带宽要软：窄脊会收成一条极细的掠射亮线，环往外扩时不断重采样 = 闪烁。
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('float spread = (distance(uv, pulse.xy) - pulse.z * 0.5) * 13.0;');
     });
 
     it('never draws slats: the surface paints one continuous field', () => {

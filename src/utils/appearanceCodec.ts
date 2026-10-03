@@ -14,6 +14,7 @@ import {
     type Theme,
 } from '../types';
 import { normalizeLumiereTuning } from './lumiereTuning';
+import { normalizeWaveformTuning } from './waveformTuning';
 
 // src/utils/appearanceCodec.ts
 // The shareable appearance config codec: theme + visual settings <-> the minified `folia-theme://`
@@ -122,6 +123,38 @@ const decompressCladdagh = (o: any): any => ({
     focusScaleRatio: o.fsr !== undefined ? o.fsr : DEFAULT_CLADDAGH_TUNING.focusScaleRatio,
     radiusScale: o.rs !== undefined ? o.rs : DEFAULT_CLADDAGH_TUNING.radiusScale,
     ellipseTiltDeg: o.etd !== undefined ? o.etd : DEFAULT_CLADDAGH_TUNING.ellipseTiltDeg,
+});
+
+// 波环：几何字段与回环同构，另加 detail（细分）/ smoothing（平滑）；解压后统一走 normalize。
+const compressWaveform = (t: any): any => ({
+    fsr: t.focusScaleRatio,
+    rs: t.radiusScale,
+    etd: t.ellipseTiltDeg,
+    sal: t.showAxisLine,
+    lso: t.letterSpacingOffset,
+    dtl: t.detail,
+    smt: t.smoothing,
+    bim: t.beatImpact,
+    bat: t.beatAttack,
+    bdc: t.beatDecay,
+    bex: t.beatExpand,
+    bpe: t.beatPerspective,
+    bse: t.beatSensitivity,
+});
+const decompressWaveform = (o: any) => normalizeWaveformTuning({
+    focusScaleRatio: o?.fsr,
+    radiusScale: o?.rs,
+    ellipseTiltDeg: o?.etd,
+    showAxisLine: o?.sal,
+    letterSpacingOffset: o?.lso,
+    detail: o?.dtl,
+    smoothing: o?.smt,
+    beatImpact: o?.bim,
+    beatAttack: o?.bat,
+    beatDecay: o?.bdc,
+    beatExpand: o?.bex,
+    beatPerspective: o?.bpe,
+    beatSensitivity: o?.bse,
 });
 
 const compressCappella = (t: any): any => ({
@@ -599,6 +632,7 @@ export const compressConfig = (config: any): string => {
     if (config.sonnetTuning) minified.snt = compressSonnet(config.sonnetTuning);
     if (config.temperaTuning) minified.tmp = compressTempera(config.temperaTuning);
     if (config.lumiereTuning) minified.lmt = compressLumiere(config.lumiereTuning);
+    if (config.waveformTuning) minified.wft = compressWaveform(config.waveformTuning);
     // Folium param values are already plain JSON keyed by scope; stored as-is.
     if (config.foliumParams) minified.fp = config.foliumParams;
     if (config.urlBackgroundList) minified.ubl = config.urlBackgroundList;
@@ -727,6 +761,7 @@ export const decompressConfig = (str: string): any => {
         if (parsed.snt) decompressed.sonnetTuning = decompressSonnet(parsed.snt);
         if (parsed.tmp) decompressed.temperaTuning = decompressTempera(parsed.tmp);
         if (parsed.lmt) decompressed.lumiereTuning = decompressLumiere(parsed.lmt);
+        if (parsed.wft) decompressed.waveformTuning = decompressWaveform(parsed.wft);
         if (parsed.fp) decompressed.foliumParams = parsed.fp;
         if (parsed.ubl) decompressed.urlBackgroundList = parsed.ubl;
         if (parsed.ubid) decompressed.urlBackgroundSelectedId = parsed.ubid;
@@ -751,7 +786,7 @@ export const decompressConfig = (str: string): any => {
             'subtitleFontFallbackFamilies', 'visualizerTunings', 'classicTuning',
             'cadenzaTuning', 'partitaTuning', 'fumeTuning', 'claddaghTuning', 'cappellaTuning',
             'tiltTuning', 'dioramaTuning', 'monetBackgroundTuning', 'nomandBackgroundTuning', 'latentBackgroundTuning', 'soraBackgroundTuning', 'tideBackgroundTuning', 'monetTuning',
-            'pendoloTuning', 'sonnetTuning', 'temperaTuning', 'lumiereTuning', 'foliumParams',
+            'pendoloTuning', 'sonnetTuning', 'temperaTuning', 'lumiereTuning', 'waveformTuning', 'foliumParams',
             'urlBackgroundList', 'urlBackgroundSelectedId',
             'songThemeAutoSwitchEnabled', 'songThemeAutoGenerateEnabled', 'themeGenerationSource', 'followSystemTheme',
             'stageTrackPillMode', 'stageTrackPillTimeoutSec', 'stageTrackPillOnHome',

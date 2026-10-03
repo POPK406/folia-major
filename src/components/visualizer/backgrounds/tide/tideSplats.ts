@@ -36,6 +36,11 @@ export interface TideSplatSource {
 
 export const TIDE_SPLAT_FORCE = 6900;
 export const TIDE_MAX_SPLATS = 10;
+/**
+ * 标记自报方向推力的等效速度（uv/秒）。锚点现在完全静止（不含呼吸），推力是唯一的水动力源，
+ * 所以这里给得比原来大 —— 之前那股力其实是被「环呼吸」泵出来的（量级大一个数量级）。
+ */
+export const TIDE_ANCHOR_PUSH_SPEED = 1;
 /** Reference cursor is 40px; the lyrics get a wider brush so the water visibly moves. */
 const CURSOR_SIZE = 70;
 const MAX_CURSOR_SIZE = 900;
@@ -61,6 +66,7 @@ export const tideSplatRadius = (sizePx: number, height: number): number => {
  * 位置丝滑，而且推力直接取滤波器的速度——于是「采样快慢」和「重新聚类造成的目标跳变」都只会让
  * 速度拐弯，不会出现尖峰（那正是快速采样/转向时的抽搐）。滤波器自带速度上限，跳变也甩不出去。
  * 强度另走一档最短淡入淡出：smoothing 0 时位置是吸附的，新字/离场字仍然淡，不会“啪”一下。
+ * 自报的方向推力同理 —— 它也是每次采样才刷新，必须淡着过去，否则每 0.18s 跳一下。
  */
 const STRENGTH_FADE_SECONDS = 0.28;
 
@@ -96,19 +102,33 @@ export const glideTideAnchors = (
         pending.delete(anchor.key);
         const x = smoothDamp({ value: anchor.x, velocity: anchor.vx }, target.x, step, tau);
         const y = smoothDamp({ value: anchor.y, velocity: anchor.vy }, target.y, step, tau);
+        // 自报的方向推力同样不能直接取目标值：采样是「每 sampleSeconds 一次」的（默认 0.18s），
+        // 每样一次就硬跳一下 —— 推力水花和由它撑大的半径会以 ~5.5Hz 闪，就是那股抽搐。
+        // 位置走二阶滤波、强度走 fade，推力也走同一档 fade，输出才是连续的。
+        const previousPushX = anchor.pushX ?? 0;
+        const previousPushY = anchor.pushY ?? 0;
         next.push({
-            key: anchor.key,
+            ...anchor,
             x: x.value,
             y: y.value,
             vx: x.velocity,
             vy: y.velocity,
             strength: anchor.strength + (target.strength - anchor.strength) * fade,
+            pushX: previousPushX + ((target.pushX ?? 0) - previousPushX) * fade,
+            pushY: previousPushY + ((target.pushY ?? 0) - previousPushY) * fade,
         });
     }
 
-    // 新出现的锚点从零强度长起来，新字一冒出来不会砸出一团亮斑。
+    // 新出现的锚点从零强度长起来，新字一冒出来不会砸出一团亮斑；推力也从零长起。
     for (const target of pending.values()) {
-        next.push({ ...target, vx: 0, vy: 0, strength: target.strength * fade });
+        next.push({
+            ...target,
+            vx: 0,
+            vy: 0,
+            strength: target.strength * fade,
+            pushX: (target.pushX ?? 0) * fade,
+            pushY: (target.pushY ?? 0) * fade,
+        });
     }
 
     return next;
@@ -141,17 +161,22 @@ export const buildTideSplats = (source: TideSplatSource): TideSplat[] => {
             }
 
             const gain = strength * clamp(0.4 + intensity * 0.7, 0, 2) * momentum * dt * TIDE_SPLAT_FORCE;
-            const speed = Math.hypot(anchor.vx * aspect, anchor.vy);
+            // 有效速度 = 自移动速度 + 自报方向推力：交界向量是静止的，力的方向完全来自滚动方向；
+            // 文字锚点不带方向推力，公式与原来一致（只剩自移动）。
+            const velocityX = anchor.vx + (anchor.pushX ?? 0) * TIDE_ANCHOR_PUSH_SPEED;
+            const velocityY = anchor.vy + (anchor.pushY ?? 0) * TIDE_ANCHOR_PUSH_SPEED;
 
             push({
                 // 屏幕坐标：流体按 uv 采样，这里直接放字的屏幕位置，水花就长在字底下。
                 u: clamp(anchor.x, 0, 1),
                 v: clamp(anchor.y, 0, 1),
-                forceX: anchor.vx * aspect * gain,
+                forceX: velocityX * aspect * gain,
                 // Anchors are measured in the fluid's own frame: v counts up from the bottom.
-                forceY: anchor.vy * gain,
+                forceY: velocityY * gain,
                 ink: INK_RATE * strength * clamp(intensity, 0.2, 2),
-                radius: tideSplatRadius(cursorSize * (1 + Math.min(1, speed) * 0.6), source.height),
+                // 半径只由设置决定：以前跟着「速度」变大，会让每一次推的落点尺寸逐帧跳
+                // （脉冲式推力下更是每喷一下就弹一下），那本身就是一处抖动。
+                radius: tideSplatRadius(cursorSize, source.height),
             });
         }
     }

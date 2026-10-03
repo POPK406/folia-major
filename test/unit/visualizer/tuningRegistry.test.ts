@@ -23,6 +23,7 @@ describe('visualizer tuning registry', () => {
             'sonnet',
             'tempera',
             'tilt',
+            'waveform',
         ]);
     });
 

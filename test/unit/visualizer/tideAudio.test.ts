@@ -54,6 +54,20 @@ describe('tide sound layer', () => {
         expect(frame.bass).toBeLessThan(0.5);
     });
 
+    it('normalizes the 0..255 analyser scale instead of clamping it to 1', () => {
+        // 主播放链路写的是 0..255：128 要读成 ~0.5，而不是被 clamp 成 1（那会让整层声音冻在最大值）。
+        const audio = new TideAudio();
+        const first = audio.update(input({ power: 128, bands: bands({ bass: 128 }) }));
+        expect(first.level).toBeGreaterThan(0);
+        expect(first.level).toBeLessThan(0.6);
+
+        const settled = run(audio, input({ power: 128, bands: bands({ bass: 128 }) }), 240);
+        expect(settled.bass).toBeCloseTo(128 / 255, 2);
+        expect(settled.level).toBeCloseTo(128 / 255, 2);
+        // 0..1 的预览刻度照旧原样透传。
+        expect(run(new TideAudio(), input({ power: 0.5 }), 240).level).toBeCloseTo(0.5, 2);
+    });
+
     it('breathes on the drum: it fills on a kick and exhales slowly', () => {
         const audio = new TideAudio();
         run(audio, input({ bands: bands() }), 10);

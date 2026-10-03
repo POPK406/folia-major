@@ -99,6 +99,21 @@ describe('Visual Settings Import and Export', () => {
             radiusScale: 1.15,
             ellipseTiltDeg: 52,
         },
+        waveformTuning: {
+            focusScaleRatio: 0.55,
+            radiusScale: 1.2,
+            ellipseTiltDeg: 30,
+            showAxisLine: false,
+            letterSpacingOffset: 4,
+            detail: 'fine' as const,
+            smoothing: 0.6,
+            beatImpact: 1.6,
+            beatAttack: 0.21,
+            beatDecay: 0.7,
+            beatExpand: 1.1,
+            beatPerspective: 0.9,
+            beatSensitivity: 2.2,
+        },
         cappellaTuning: {
             showEmoMessages: false,
             emojiPackSource: 'custom' as const,
@@ -221,6 +236,20 @@ describe('Visual Settings Import and Export', () => {
         expect(decoded.claddaghTuning?.focusScaleRatio).toBe(0.75);
         expect(decoded.claddaghTuning?.radiusScale).toBe(1.15);
         expect(decoded.claddaghTuning?.ellipseTiltDeg).toBe(52);
+        // 波环：几何字段 + detail/smoothing/beatImpact 全都要能过短码往返。
+        expect(decoded.waveformTuning?.focusScaleRatio).toBe(0.55);
+        expect(decoded.waveformTuning?.radiusScale).toBe(1.2);
+        expect(decoded.waveformTuning?.ellipseTiltDeg).toBe(30);
+        expect(decoded.waveformTuning?.showAxisLine).toBe(false);
+        expect(decoded.waveformTuning?.letterSpacingOffset).toBe(4);
+        expect(decoded.waveformTuning?.detail).toBe('fine');
+        expect(decoded.waveformTuning?.smoothing).toBe(0.6);
+        expect(decoded.waveformTuning?.beatImpact).toBe(1.6);
+        expect(decoded.waveformTuning?.beatAttack).toBe(0.21);
+        expect(decoded.waveformTuning?.beatDecay).toBe(0.7);
+        expect(decoded.waveformTuning?.beatExpand).toBe(1.1);
+        expect(decoded.waveformTuning?.beatPerspective).toBe(0.9);
+        expect(decoded.waveformTuning?.beatSensitivity).toBe(2.2);
         expect(decoded.dioramaTuning?.geometryVisibility).toEqual(sampleConfig.dioramaTuning.geometryVisibility);
         expect(decoded.dioramaTuning?.showParticles).toBe(false);
         expect(decoded.dioramaTuning?.soulActiveEnabled).toBe(true);

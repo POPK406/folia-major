@@ -25,6 +25,7 @@ export type AudioBandSignals = {
     vocal: MotionValue<number>;
     treble: MotionValue<number>;
     spectrum: MotionValue<Uint8Array<ArrayBuffer>>;
+    waveform: MotionValue<Uint8Array<ArrayBuffer>>;
 };
 
 /** Playback position of the deck the listener actually hears, in seconds. */
@@ -43,8 +44,14 @@ export const vocal = motionValue(0);
 export const treble = motionValue(0);
 export const spectrum = motionValue(new Uint8Array(0));
 
+/**
+ * Raw analyser time-domain samples (0..255, 128 is silence), for oscilloscope-style visualizers.
+ * Unlike `spectrum`, this carries the actual waveform rather than frequency bins.
+ */
+export const waveform = motionValue(new Uint8Array(0));
+
 /** The band set as one stable object, so it can be passed straight to a visualizer. */
-export const audioBands: AudioBandSignals = { bass, lowMid, mid, vocal, treble, spectrum };
+export const audioBands: AudioBandSignals = { bass, lowMid, mid, vocal, treble, spectrum, waveform };
 
 /** Global bottom baseline offset in px; positioning writes it at pointer-move frequency. */
 export const playerBottomBarLiveOffset = motionValue(PLAYER_BOTTOM_BAR_BASE_OFFSET_PX);

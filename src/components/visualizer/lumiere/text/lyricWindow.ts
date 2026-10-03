@@ -12,6 +12,7 @@ import { MAX_WORD_SCALE } from './wordStyle';
 import { buildLineMetas, buildLineView, keywordColorsOf, lineTimingOf, type GlyphFlight, type GlyphView, type LineView, type Point, type Slot } from './windowLines';
 import type { WordColorMatcher } from '../../wordColoring';
 import { KEYWORD_HALO_GAIN, keywordTints } from './keywordColors';
+import { publishTideAnchorFrom } from '../../backgrounds/tide/tideAnchorBridge';
 
 // 歌词镜头跟随的时间参考。
 const lumiereScaleMask = globalThis.devicePixelRatio | 0;
@@ -928,6 +929,9 @@ export const createLyricWindow = (pixi: PixiModule, options: LyricWindowOptions)
                 // 没唱到的字也会被光柱照出来（冷色、半亮），唱到之后才是暖金色并带辉光；飞行中的字像带电粒子一样发亮。
                 const revealed = Math.min(1, unlitAlpha + illumination * 0.45 + local.flying * 0.4);
                 glyph.glyph.alpha = glyphAlpha * (revealed * (1 - lit) + lit * Math.min(1, 0.55 + 0.4 * heat + 0.3 * local.flying));
+                // 逐字发布给 tide：绘光的字画在 Pixi 画布里，DOM 里没有字形，tide 只能靠这条桥
+                // 知道「字现在在哪、亮到什么程度」，水才做得出随字飘散。（见 tideAnchorBridge）
+                publishTideAnchorFrom(glyph.glyph, glyph.glyph.alpha);
                 // 关键字：点亮后的字身、光晕、闪点换成关键字光色（未唱时仍是冷色）。
                 const tints = glyph.tints;
                 const hot = mixRgb(tints ? tints.glyph : litColor, WHITE, clamp01(0.08 * illumination + 0.1 * flash + 0.25 * local.flying));

@@ -43,7 +43,11 @@ const EMPTY_FOCUS: number[][] = [EMPTY_SLOT, EMPTY_SLOT, EMPTY_SLOT, EMPTY_SLOT,
 
 const PRESSURE_STEPS = 16;
 const PRESSURE_DAMPING = 0.8;
-const SWIRL_FORCE = 14;
+/**
+ * 涡量约束强度。参考实现用 30，但它是「指针划过去」那种瞬态激励；这里是驻留源，
+ * 值一大就会把每个撇出去的涡放大成一个常驻漩涡 —— 降到很低，让扰动吹散而不是积起来。
+ */
+const SWIRL_FORCE = 6;
 /** 参考实现的默认预设 swell：250 度，雾和透视都拉开。 */
 const WAVE_DIRECTION = 4.3633;
 const WAVE_SCALE_BASE = 1.5;
@@ -71,6 +75,13 @@ export const tideTrailSeconds = (dissipation: number): number =>
 
 /** The reference's decay rates: ink 1/trail, velocity 1.4/trail, both applied as 1/(1 + fade*dt). */
 export const tideInkFade = (dissipation: number): number => 1 / tideTrailSeconds(dissipation);
+
+/**
+ * 响度驱动拖尾：安静时保持设定值（水干净利落），越响耗散越小 —— 墨迹久久不散，翻涌起来。
+ * 只缩放「这一帧的衰减率」，不碰设定本身，所以设置面板里的值仍是基准。
+ */
+export const tideLoudnessDissipation = (dissipation: number, loudness: number): number =>
+    clamp(dissipation, 0, 1) * (1 - 0.55 * clamp(loudness, 0, 1));
 
 const applySplat = (
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -179,7 +190,9 @@ export const renderTideFrame = (
     }
 
     if (params.fluidActive) {
-        stepTideFluid(gl, resources, params.dt, tideInkFade(tuning.dissipation));
+        // 拖尾跟着响度走：安静时短、大声时长，水面因此有「呼吸」而非匀速消散。
+        const loudness = clamp(params.audio?.level ?? 0, 0, 1);
+        stepTideFluid(gl, resources, params.dt, tideInkFade(tideLoudnessDissipation(tuning.dissipation, loudness)));
     } else if (params.resetFluid) {
         clearTideFluid(gl, resources);
     }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_TIDE_BACKGROUND_TUNING, type TideBackgroundTuning } from '@/types';
 import {
+    TIDE_ANCHOR_PUSH_SPEED,
     TIDE_MAX_SPLATS,
     TIDE_SPLAT_FORCE,
     buildTideSplats,
@@ -55,10 +56,10 @@ describe('tide splats', () => {
         expect(splat.v).toBeCloseTo(0.6, 5);
         expect(splat.forceX).toBeCloseTo(0.2 * (1600 / 900) * gain, 5);
         expect(splat.forceY).toBeCloseTo(0.3 * gain, 5);
-        const speed = Math.hypot(0.2 * (1600 / 900), 0.3);
         expect(splat.ink).toBeCloseTo(1.2 * clamp(DEFAULT_TIDE_BACKGROUND_TUNING.intensity, 0.2, 2), 5);
+        // 半径只由 spread 决定（不再跟着速度变）。
         expect(splat.radius).toBeCloseTo(
-            tideSplatRadius(70 * DEFAULT_TIDE_BACKGROUND_TUNING.spread * (1 + Math.min(1, speed) * 0.6), 900),
+            tideSplatRadius(70 * DEFAULT_TIDE_BACKGROUND_TUNING.spread, 900),
             8,
         );
     });
@@ -69,6 +70,27 @@ describe('tide splats', () => {
             tuning: tuning({ followLyrics: false }),
         }));
         expect(splats).toEqual([]);
+    });
+
+    it('drives a stationary emitter along its self-reported direction (the handover vector)', () => {
+        const gain = 1 * (0.4 + DEFAULT_TIDE_BACKGROUND_TUNING.intensity * 0.7) * (1 / 60) * TIDE_SPLAT_FORCE;
+
+        // 静止且没有方向推力的锚点：只留下染料，不推水。
+        const still = buildTideSplats(source({ anchors: [anchor()] }))[0];
+        expect(still.forceX).toBe(0);
+        expect(still.forceY).toBe(0);
+
+        // 静止但有方向（流体坐标 y 向上，-1 就是向下推）：力完全来自自报方向。
+        const outward = buildTideSplats(source({ anchors: [anchor({ pushX: 0, pushY: -1 })] }))[0];
+        expect(outward.forceX).toBe(0);
+        expect(outward.forceY).toBeCloseTo(-TIDE_ANCHOR_PUSH_SPEED * gain, 5);
+        // 半径不再跟速度走：静点与喷点的落点尺寸一致。
+        expect(outward.radius).toBeCloseTo(still.radius, 8);
+
+        // 横向推力走 aspect：x 方向被换算进流体的横向尺度。
+        const sideways = buildTideSplats(source({ anchors: [anchor({ pushX: 1, pushY: 0 })] }))[0];
+        expect(sideways.forceX).toBeCloseTo(TIDE_ANCHOR_PUSH_SPEED * (1600 / 900) * gain, 5);
+        expect(sideways.forceY).toBe(0);
     });
 
     it('never pops word by word: a fast word still yields exactly one splat', () => {
@@ -177,6 +199,26 @@ describe('tide anchor glide', () => {
         // 新锚点从静止开始，没有出生冲量。
         expect(glided[0].vx).toBe(0);
         expect(glided[0].vy).toBe(0);
+    });
+
+    it('eases the self-reported momentum instead of snapping it at the sample boundary', () => {
+        const target = anchor({ pushX: 0.6, pushY: 0 });
+        const start = anchor({ pushX: 0, pushY: 0 });
+        const first = glideTideAnchors([start], [target], STEP, 0.5);
+
+        // 一帧只走一小段：采样到的瞬间不会直接跳到目标值 —— 那正是每 0.18s 跳一下的抽搐来源。
+        expect(first[0].pushX).toBeGreaterThan(0);
+        expect(first[0].pushX).toBeLessThan(0.1);
+        // 跑一会儿后跟上目标。
+        expect(chase(120, target, start).pushX).toBeCloseTo(0.6, 3);
+    });
+
+    it('ramps a brand new anchor push from zero (no birth kick)', () => {
+        const glided = glideTideAnchors([], [anchor({ pushX: 0.5, pushY: 0.5 })], STEP, 0.5);
+
+        expect(glided[0].pushX).toBeGreaterThan(0);
+        expect(glided[0].pushX).toBeLessThan(0.5);
+        expect(glided[0].pushY).toBeLessThan(0.5);
     });
 
     it('eases a vanishing anchor out and drops it once it is faint', () => {

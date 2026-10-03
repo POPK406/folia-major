@@ -45,6 +45,7 @@ export const visualizerCommands: CommandPaletteCommand[] = [
     createVisualizerCommand('fume', 'Visualizer: Fume', 'Switch to fume visualizer', ['fume', '浮名']),
     createVisualizerCommand('tilt', 'Visualizer: Tilt', 'Switch to tilt visualizer', ['tilt', '倾诉']),
     createVisualizerCommand('claddagh', 'Visualizer: Claddagh', 'Switch to Claddagh visualizer', ['claddagh', '回环']),
+    createVisualizerCommand('waveform', 'Visualizer: Wave Ring', 'Switch to the waveform ring visualizer', ['waveform', 'wave ring', '波环', '波形']),
     createVisualizerCommand('monet', 'Visualizer: Monet', 'Switch to Monet visualizer', ['monet', '莫奈', '切换到可视化：莫奈', '切换到可视化莫奈']),
     createVisualizerCommand('pendolo', 'Visualizer: Pendolo', 'Switch to Pendolo visualizer', ['pendolo', '擒纵', '摆轮', 'pd', '切换到可视化：擒纵', '切换到可视化擒纵']),
     createVisualizerCommand('cappella', 'Visualizer: Cappella', 'Switch to cappella visualizer', ['cappella', '群唱']),

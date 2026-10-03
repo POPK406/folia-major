@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { DEFAULT_CAPPELLA_TUNING, DEFAULT_CLASSIC_TUNING, DEFAULT_CLADDAGH_TUNING, DEFAULT_DIORAMA_TUNING, DEFAULT_FUME_TUNING, DEFAULT_PARTITA_TUNING, DEFAULT_TILT_TUNING, DIORAMA_PARTICLE_DENSITY_MAX, DIORAMA_PARTICLE_DENSITY_MIN, DIORAMA_PARTICLE_GLOW_INTENSITY_MAX, DIORAMA_PARTICLE_GLOW_INTENSITY_MIN, DIORAMA_PARTICLE_SIZE_MAX, DIORAMA_PARTICLE_SIZE_MIN, type CappellaTuning, type ClassicTuning, type CladdaghTuning, type DioramaTuning, type FumeTuning, type PartitaTuning, type TiltColorScheme, type TiltTuning } from '../../types';
+import { DEFAULT_CAPPELLA_TUNING, DEFAULT_CLASSIC_TUNING, DEFAULT_CLADDAGH_TUNING, DEFAULT_DIORAMA_TUNING, DEFAULT_FUME_TUNING, DEFAULT_PARTITA_TUNING, DEFAULT_TILT_TUNING, DEFAULT_WAVEFORM_TUNING, DIORAMA_PARTICLE_DENSITY_MAX, DIORAMA_PARTICLE_DENSITY_MIN, DIORAMA_PARTICLE_GLOW_INTENSITY_MAX, DIORAMA_PARTICLE_GLOW_INTENSITY_MIN, DIORAMA_PARTICLE_SIZE_MAX, DIORAMA_PARTICLE_SIZE_MIN, type CappellaTuning, type ClassicTuning, type CladdaghTuning, type DioramaTuning, type FumeTuning, type PartitaTuning, type TiltColorScheme, type TiltTuning, type WaveformDetail, type WaveformTuning } from '../../types';
 import { colorWithAlpha } from './colorMix';
 import { type VisualizerSettingsPanelProps } from './definition';
 import { DioramaGeometrySettings } from './diorama/DioramaGeometrySettings';
@@ -1139,6 +1139,119 @@ export const DioramaSettingsPanel: React.FC<VisualizerSettingsPanelProps> = ({
 
 const clampCladdaghLetterSpacingOffset = (val: number) => Math.min(20, Math.max(-5, val));
 
+/**
+ * 回环与波环共用的几何控件（焦点缩放 / 半径 / 倾角 / 轴线 / 字距）。
+ * 两个模式的 tuning 在这几个字段上同构，抽出来免得两份面板漂移。
+ */
+const CladdaghGeometryFields: React.FC<{
+    t: VisualizerSettingsPanelProps['t'];
+    isDaylight: boolean;
+    theme: VisualizerSettingsPanelProps['theme'];
+    rangeInputClass: string;
+    onSliderPointerDown?: () => void;
+    onSliderCommit?: () => void;
+    tuning: CladdaghTuning;
+    onChange: (patch: Partial<CladdaghTuning>) => void;
+}> = ({ t, isDaylight, theme, rangeInputClass, onSliderPointerDown, onSliderCommit, tuning, onChange }) => {
+    const axisLineOptions: PresetOption<boolean>[] = useMemo(() => ([
+        { value: true, label: t('options.partitaGuideLinesOn') },
+        { value: false, label: t('options.partitaGuideLinesOff') },
+    ]), [t]);
+
+    return (
+        <>
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
+                    <span>{t('options.claddaghFocusScaleRatio') }</span>
+                    <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
+                        {(tuning.focusScaleRatio + 1.0).toFixed(2)}x
+                    </span>
+                </div>
+                <input
+                    type="range"
+                    min="0.0"
+                    max="1.5"
+                    step="0.05"
+                    value={tuning.focusScaleRatio}
+                    onChange={(event) => onChange({ focusScaleRatio: parseFloat(event.target.value) })}
+                    onPointerDown={onSliderPointerDown}
+                    onPointerUp={onSliderCommit}
+                    className={rangeInputClass}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
+                    <span>{t('options.claddaghRadiusScale') }</span>
+                    <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
+                        {tuning.radiusScale.toFixed(2)}x
+                    </span>
+                </div>
+                <input
+                    type="range"
+                    min="0.5"
+                    max="1.5"
+                    step="0.05"
+                    value={tuning.radiusScale}
+                    onChange={(event) => onChange({ radiusScale: parseFloat(event.target.value) })}
+                    onPointerDown={onSliderPointerDown}
+                    onPointerUp={onSliderCommit}
+                    className={rangeInputClass}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
+                    <span>{t('options.claddaghEllipseTiltDeg') }</span>
+                    <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
+                        {tuning.ellipseTiltDeg}°
+                    </span>
+                </div>
+                <input
+                    type="range"
+                    min="0"
+                    max="60"
+                    step="1"
+                    value={tuning.ellipseTiltDeg}
+                    onChange={(event) => onChange({ ellipseTiltDeg: parseInt(event.target.value, 10) })}
+                    onPointerDown={onSliderPointerDown}
+                    onPointerUp={onSliderCommit}
+                    className={rangeInputClass}
+                />
+            </div>
+
+            <PresetGroup
+                label={t('options.claddaghShowAxisLine')}
+                value={tuning.showAxisLine}
+                options={axisLineOptions}
+                onChange={(next) => onChange({ showAxisLine: next })}
+                isDaylight={isDaylight}
+                theme={theme}
+            />
+
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
+                    <span>{t('options.claddaghLetterSpacingOffset')}</span>
+                    <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
+                        {tuning.letterSpacingOffset > 0 ? '+' : ''}{tuning.letterSpacingOffset.toFixed(1)}px
+                    </span>
+                </div>
+                <input
+                    type="range"
+                    min="-5"
+                    max="20"
+                    step="0.5"
+                    value={tuning.letterSpacingOffset}
+                    onChange={(event) => onChange({ letterSpacingOffset: parseFloat(event.target.value) })}
+                    onPointerDown={onSliderPointerDown}
+                    onPointerUp={onSliderCommit}
+                    className={rangeInputClass}
+                />
+            </div>
+        </>
+    );
+};
+
 export const CladdaghSettingsPanel: React.FC<VisualizerSettingsPanelProps> = ({
     t,
     isDaylight,
@@ -1158,11 +1271,6 @@ export const CladdaghSettingsPanel: React.FC<VisualizerSettingsPanelProps> = ({
         letterSpacingOffset: clampCladdaghLetterSpacingOffset(claddaghTuning.letterSpacingOffset ?? DEFAULT_CLADDAGH_TUNING.letterSpacingOffset),
     };
 
-    const axisLineOptions: PresetOption<boolean>[] = useMemo(() => ([
-        { value: true, label: t('options.partitaGuideLinesOn') },
-        { value: false, label: t('options.partitaGuideLinesOff') },
-    ]), [t]);
-
     return (
         <div
             className="rounded-[24px] border border-white/10 p-4 space-y-4"
@@ -1177,94 +1285,199 @@ export const CladdaghSettingsPanel: React.FC<VisualizerSettingsPanelProps> = ({
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
-                    <span>{t('options.claddaghFocusScaleRatio') }</span>
-                    <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
-                        {(resolvedTuning.focusScaleRatio + 1.0).toFixed(2)}x
-                    </span>
-                </div>
-                <input
-                    type="range"
-                    min="0.0"
-                    max="1.5"
-                    step="0.05"
-                    value={resolvedTuning.focusScaleRatio}
-                    onChange={(event) => onCladdaghTuningChange?.({ focusScaleRatio: parseFloat(event.target.value) })}
-                    onPointerDown={onSliderPointerDown}
-                    onPointerUp={onSliderCommit}
-                    className={rangeInputClass}
-                />
-            </div>
+            <CladdaghGeometryFields
+                t={t}
+                isDaylight={isDaylight}
+                theme={theme}
+                rangeInputClass={rangeInputClass}
+                onSliderPointerDown={onSliderPointerDown}
+                onSliderCommit={onSliderCommit}
+                tuning={resolvedTuning}
+                onChange={(patch) => onCladdaghTuningChange?.(patch)}
+            />
+        </div>
+    );
+};
 
-            <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
-                    <span>{t('options.claddaghRadiusScale') }</span>
-                    <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
-                        {resolvedTuning.radiusScale.toFixed(2)}x
-                    </span>
-                </div>
-                <input
-                    type="range"
-                    min="0.5"
-                    max="1.5"
-                    step="0.05"
-                    value={resolvedTuning.radiusScale}
-                    onChange={(event) => onCladdaghTuningChange?.({ radiusScale: parseFloat(event.target.value) })}
-                    onPointerDown={onSliderPointerDown}
-                    onPointerUp={onSliderCommit}
-                    className={rangeInputClass}
-                />
-            </div>
+/** 重拍参数各自的钳制：与 normalizeWaveformTuning 同一套区间，面板只做展示层兜底。 */
+const clampWaveformBeat = (value: number | undefined, fallback: number, min: number, max: number) => {
+    const parsed = typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+    return Math.min(max, Math.max(min, parsed));
+};
 
-            <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
-                    <span>{t('options.claddaghEllipseTiltDeg') }</span>
-                    <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
-                        {resolvedTuning.ellipseTiltDeg}°
-                    </span>
+const WAVEFORM_DETAIL_OPTIONS: readonly { value: WaveformDetail; labelKey: string; }[] = [
+    { value: 'low', labelKey: 'options.waveformDetailLow' },
+    { value: 'standard', labelKey: 'options.waveformDetailStandard' },
+    { value: 'fine', labelKey: 'options.waveformDetailFine' },
+];
+
+/**
+ * 波环面板：回环的几何控件 + 波环自己的两个字段。
+ * - 细分：波形在环上的采样密度（同时决定静态分析的重采样档位）；
+ * - 波形平滑：0 = 原始峰值，1 = FL 时间轴那种柔化包络。
+ */
+export const WaveformSettingsPanel: React.FC<VisualizerSettingsPanelProps> = ({
+    t,
+    isDaylight,
+    theme,
+    controlCardBg,
+    rangeInputClass,
+    onSliderPointerDown,
+    onSliderCommit,
+    waveformTuning = DEFAULT_WAVEFORM_TUNING,
+    onWaveformTuningChange,
+}) => {
+    const resolvedTuning: WaveformTuning = {
+        focusScaleRatio: clampCladdaghFocusScaleRatio(waveformTuning.focusScaleRatio ?? DEFAULT_WAVEFORM_TUNING.focusScaleRatio),
+        radiusScale: clampCladdaghRadiusScale(waveformTuning.radiusScale ?? DEFAULT_WAVEFORM_TUNING.radiusScale),
+        ellipseTiltDeg: clampCladdaghEllipseTiltDeg(waveformTuning.ellipseTiltDeg ?? DEFAULT_WAVEFORM_TUNING.ellipseTiltDeg),
+        showAxisLine: waveformTuning.showAxisLine ?? DEFAULT_WAVEFORM_TUNING.showAxisLine,
+        letterSpacingOffset: clampCladdaghLetterSpacingOffset(waveformTuning.letterSpacingOffset ?? DEFAULT_WAVEFORM_TUNING.letterSpacingOffset),
+        detail: waveformTuning.detail ?? DEFAULT_WAVEFORM_TUNING.detail,
+        smoothing: Math.min(1, Math.max(0, waveformTuning.smoothing ?? DEFAULT_WAVEFORM_TUNING.smoothing)),
+        beatImpact: clampWaveformBeat(waveformTuning.beatImpact, DEFAULT_WAVEFORM_TUNING.beatImpact, 0, 2),
+        beatAttack: clampWaveformBeat(waveformTuning.beatAttack, DEFAULT_WAVEFORM_TUNING.beatAttack, 0, 0.5),
+        beatDecay: clampWaveformBeat(waveformTuning.beatDecay, DEFAULT_WAVEFORM_TUNING.beatDecay, 0.05, 1.2),
+        beatExpand: clampWaveformBeat(waveformTuning.beatExpand, DEFAULT_WAVEFORM_TUNING.beatExpand, 0, 1.5),
+        beatPerspective: clampWaveformBeat(waveformTuning.beatPerspective, DEFAULT_WAVEFORM_TUNING.beatPerspective, 0, 1.5),
+        beatSensitivity: clampWaveformBeat(waveformTuning.beatSensitivity, DEFAULT_WAVEFORM_TUNING.beatSensitivity, 0.3, 3),
+    };
+
+    /** 一行「标签 + 数值 + 滑杆」：重拍这六个参数结构完全一样，抽出来免得六份重复。 */
+    const beatRow = (
+        label: string,
+        value: number,
+        min: number,
+        max: number,
+        step: number,
+        format: (value: number) => string,
+        key: keyof WaveformTuning,
+    ) => (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
+                <span>{label}</span>
+                <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
+                    {format(value)}
+                </span>
+            </div>
+            <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                onChange={(event) => onWaveformTuningChange?.({ [key]: parseFloat(event.target.value) } as Partial<WaveformTuning>)}
+                onPointerDown={onSliderPointerDown}
+                onPointerUp={onSliderCommit}
+                className={rangeInputClass}
+            />
+        </div>
+    );
+
+    const detailOptions: PresetOption<WaveformDetail>[] = useMemo(() => (
+        WAVEFORM_DETAIL_OPTIONS.map(option => ({ value: option.value, label: t(option.labelKey) }))
+    ), [t]);
+
+    return (
+        <div
+            className="rounded-[24px] border border-white/10 p-4 space-y-4"
+            style={{ backgroundColor: controlCardBg }}
+        >
+            <div className="space-y-1">
+                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {t('options.waveformSettings') }
                 </div>
-                <input
-                    type="range"
-                    min="0"
-                    max="60"
-                    step="1"
-                    value={resolvedTuning.ellipseTiltDeg}
-                    onChange={(event) => onCladdaghTuningChange?.({ ellipseTiltDeg: parseInt(event.target.value, 10) })}
-                    onPointerDown={onSliderPointerDown}
-                    onPointerUp={onSliderCommit}
-                    className={rangeInputClass}
-                />
+                <div className="text-xs opacity-50" style={{ color: 'var(--text-secondary)' }}>
+                    {t('options.waveformSettingsDesc')}
+                </div>
             </div>
 
             <PresetGroup
-                label={t('options.claddaghShowAxisLine')}
-                value={resolvedTuning.showAxisLine}
-                options={axisLineOptions}
-                onChange={(next) => onCladdaghTuningChange?.({ showAxisLine: next })}
+                label={t('options.waveformDetail')}
+                value={resolvedTuning.detail}
+                options={detailOptions}
+                onChange={(next) => onWaveformTuningChange?.({ detail: next })}
                 isDaylight={isDaylight}
                 theme={theme}
             />
 
             <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-primary)' }}>
-                    <span>{t('options.claddaghLetterSpacingOffset')}</span>
+                    <span>{t('options.waveformSmoothing') }</span>
                     <span className="font-mono opacity-70" style={{ color: 'var(--text-secondary)' }}>
-                        {resolvedTuning.letterSpacingOffset > 0 ? '+' : ''}{resolvedTuning.letterSpacingOffset.toFixed(1)}px
+                        {Math.round(resolvedTuning.smoothing * 100)}%
                     </span>
                 </div>
                 <input
                     type="range"
-                    min="-5"
-                    max="20"
-                    step="0.5"
-                    value={resolvedTuning.letterSpacingOffset}
-                    onChange={(event) => onCladdaghTuningChange?.({ letterSpacingOffset: parseFloat(event.target.value) })}
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={resolvedTuning.smoothing}
+                    onChange={(event) => onWaveformTuningChange?.({ smoothing: parseFloat(event.target.value) })}
                     onPointerDown={onSliderPointerDown}
                     onPointerUp={onSliderCommit}
                     className={rangeInputClass}
                 />
             </div>
+
+            {/* 重拍透视冲击：低频起音触发，幅度由低频分贝、角度由中频分贝驱动。 */}
+            <div className="space-y-1 pt-1">
+                <div className="text-xs font-medium uppercase tracking-[0.24em] opacity-45" style={{ color: 'var(--text-secondary)' }}>
+                    {t('options.waveformBeatGroup')}
+                </div>
+                <div className="text-xs opacity-50" style={{ color: 'var(--text-secondary)' }}>
+                    {t('options.waveformBeatGroupDesc')}
+                </div>
+            </div>
+
+            {beatRow(
+                t('options.waveformBeatImpact'),
+                resolvedTuning.beatImpact, 0, 2, 0.05,
+                value => `${Math.round(value * 100)}%`,
+                'beatImpact',
+            )}
+            {beatRow(
+                t('options.waveformBeatAttack'),
+                resolvedTuning.beatAttack, 0, 0.5, 0.01,
+                value => `${value.toFixed(2)}s`,
+                'beatAttack',
+            )}
+            {beatRow(
+                t('options.waveformBeatDecay'),
+                resolvedTuning.beatDecay, 0.05, 1.2, 0.01,
+                value => `${value.toFixed(2)}s`,
+                'beatDecay',
+            )}
+            {beatRow(
+                t('options.waveformBeatExpand'),
+                resolvedTuning.beatExpand, 0, 1.5, 0.05,
+                value => `${Math.round(value * 100)}%`,
+                'beatExpand',
+            )}
+            {beatRow(
+                t('options.waveformBeatPerspective'),
+                resolvedTuning.beatPerspective, 0, 1.5, 0.05,
+                value => `${Math.round(value * 100)}%`,
+                'beatPerspective',
+            )}
+            {beatRow(
+                t('options.waveformBeatSensitivity'),
+                resolvedTuning.beatSensitivity, 0.3, 3, 0.05,
+                value => `${value.toFixed(2)}x`,
+                'beatSensitivity',
+            )}
+
+            <CladdaghGeometryFields
+                t={t}
+                isDaylight={isDaylight}
+                theme={theme}
+                rangeInputClass={rangeInputClass}
+                onSliderPointerDown={onSliderPointerDown}
+                onSliderCommit={onSliderCommit}
+                tuning={resolvedTuning}
+                onChange={(patch) => onWaveformTuningChange?.(patch)}
+            />
         </div>
     );
 };

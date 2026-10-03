@@ -276,7 +276,11 @@ describe('tide loudness momentum', () => {
         expect(tideMomentumGain(0.5, 1)).toBeCloseTo(1, 8);
         expect(quiet).toBeLessThan(neutral);
         expect(neutral).toBeLessThan(loud);
-        expect(loud / quiet).toBeCloseTo(tideMomentumGain(1, 1) / tideMomentumGain(0, 1), 6);
+        // 期望值必须跟随默认配置读，不能写死 1：soundReactive 本身就是响度动量的倍率。
+        const soundReactive = DEFAULT_TIDE_BACKGROUND_TUNING.soundReactive;
+        expect(loud / quiet).toBeCloseTo(
+            tideMomentumGain(1, soundReactive) / tideMomentumGain(0, soundReactive), 6,
+        );
         // 缺省即中性：没有响度可用的调用方数值不变。
         expect(force()).toBeCloseTo(neutral, 8);
     });

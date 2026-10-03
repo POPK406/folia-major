@@ -1157,7 +1157,7 @@ export const DEFAULT_TIDE_BACKGROUND_TUNING: TideBackgroundTuning = {
   smoothing: 0.6,
   cameraFollow: true,
   cameraStrength: 0.45,
-  soundReactive: 1,
+  soundReactive: 0.15,
   lyricLift: 1,
   waveScale: 0.75,
   waveSpeed: 1,

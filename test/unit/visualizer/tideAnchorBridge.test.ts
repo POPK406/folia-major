@@ -135,6 +135,30 @@ describe('LyricAnchorSampler bridged anchors', () => {
         expect(samples[0].key).toBe('bridge:0');
     });
 
+    it('lands on the exact same spot as the existing DOM mark path for the same screen point', () => {
+        // 同一个屏幕点 (350, 175)：一边是画布像素 (250, 125)（画布 rect 在 100, 50），
+        // 一边是视口坐标下零尺寸的标记。两条路径必须给出同一个归一化坐标 ——
+        // 这条断言把 bridge 的 y 约定钉死在一个已经被视觉验证过的参照上，而不是钉在我的读码结论上。
+        setTideAnchorCanvas(buildCanvas());
+        beginTideAnchors();
+        pushTideAnchor(250, 125, 1);
+        const bridged = sample();
+
+        clearTideAnchors();
+        const stage = document.createElement('div');
+        const mark = document.createElement('div');
+        mark.dataset.tidePlayhead = 'true';
+        mark.getBoundingClientRect = () => ({ left: 350, top: 175, right: 350, bottom: 175, width: 0, height: 0, x: 350, y: 175 }) as DOMRect;
+        stage.appendChild(mark);
+        document.body.appendChild(stage);
+        const marks = sample({ stage });
+
+        expect(bridged).toHaveLength(1);
+        expect(marks).toHaveLength(1);
+        expect(bridged[0].x).toBeCloseTo(marks[0].x, 9);
+        expect(bridged[0].y).toBeCloseTo(marks[0].y, 9);
+    });
+
     it('takes priority over DOM glyphs, which canvas modes do not have anyway', () => {
         const stage = buildStage('ABCD');
         setTideAnchorCanvas(buildCanvas());

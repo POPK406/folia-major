@@ -8,8 +8,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // browser's text metrics.
 
 import {
+    buildTideLineWordRanges,
     collectTideGlyphs,
-    findTideClusterIndex,
     measureTideGlyphRange,
     normalizeAnchorText,
     readTideMarkAnchors,
@@ -32,7 +32,12 @@ const stubGlyphRects = (options: { empty?: boolean } = {}) => {
         }
 
         const text = this.toString();
-        const baseIndex = Math.max(0, ALPHABET.indexOf(text[0] ?? 'A'));
+        // 节点显式声明了 data-glyph-base 时，按「节点基准 + Range 起点偏移」定位：
+        // 同一个词重复出现时才能靠各自的字形位置区分开。没有该属性就沿用按首字符推的旧逻辑。
+        const explicitBase = (this.startContainer?.parentElement as HTMLElement | null)?.dataset?.glyphBase;
+        const baseIndex = explicitBase !== undefined
+            ? Number(explicitBase) + (this.startOffset ?? 0)
+            : Math.max(0, ALPHABET.indexOf(text[0] ?? 'A'));
         const rects = Array.from(text, (_, index) => {
             const left = glyphLeft + (baseIndex + index) * 10;
             return {
@@ -135,12 +140,15 @@ describe('tideGlyphDom', () => {
         expect(glyphs.map(glyph => glyph.offset)).toEqual([0, 1, 1, 2]);
     });
 
-    it('finds the word nearest to the reading cursor and falls back to its first occurrence', () => {
-        expect(findTideClusterIndex('ABCDABCD', 'CD', 0)).toBe(2);
-        expect(findTideClusterIndex('ABCDABCD', 'CD', 4)).toBe(6);
-        expect(findTideClusterIndex(`CD${'x'.repeat(21)}CD`, 'CD', 4)).toBe(0);
-        expect(findTideClusterIndex('ABC', 'ZZ', 0)).toBe(-1);
-        expect(findTideClusterIndex('ABC', '', 0)).toBe(-1);
+    it('maps each word to its own glyph range so a repeated word keeps its own occurrence', () => {
+        const line = makeLine([['AB', 1, 1.4], ['CD', 1.4, 2], ['AB', 2.2, 2.8]]);
+        expect(buildTideLineWordRanges('ABCDAB', line)).toEqual([
+            { start: 0, length: 2 },
+            { start: 2, length: 2 },
+            { start: 4, length: 2 },
+        ]);
+        // 行文本不在舞台上、或分词和字形长度对不上时不给映射，让调用方退回其他锚点。
+        expect(buildTideLineWordRanges('ABCD', line)).toEqual([]);
     });
 
     it('measures a glyph range from the union of its client rects', () => {
@@ -316,6 +324,29 @@ describe('LyricAnchorSampler', () => {
         expect(samples[0].y).toBeCloseTo(0.79, 5);
         expect(samples[0].strength).toBeCloseTo(1, 5);
         expect(samples[1].x).toBeCloseTo(0.115, 5);
+    });
+
+    it('anchors a repeated word to its own DOM range instead of the first match', () => {
+        stubGlyphRects();
+        // 同一行里同一个词出现两次，且都渲染在同一个文本节点里。
+        document.body.innerHTML = '';
+        const stage = document.createElement('div');
+        const span = document.createElement('span');
+        span.textContent = 'ABAB';
+        span.dataset.glyphBase = '0';
+        stage.appendChild(span);
+        document.body.appendChild(stage);
+
+        const line = makeLine([['AB', 1, 1.4], ['AB', 2.2, 2.8]]);
+        // 第一个「AB」早已唱完（超出 0.5s 的尾部窗口），此刻只有第二个词活跃。
+        const samples = new LyricAnchorSampler()
+            .sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [line], lineIndex: 0, timeSec: 2.4 });
+
+        expect(samples.map(sample => sample.key)).toEqual(['dom:1']);
+        // 第二个「AB」横跨字形 2..3（left 120..140），中心 x = 0.13。
+        // 旧的「从串首重新搜索」只命中第一个（100..120），x 会错成 0.11。
+        expect(samples[0].x).toBeCloseTo(0.13, 5);
+        expect(samples[0].x).not.toBeCloseTo(0.11, 3);
     });
 
     it('follows the glyphs but never reports a velocity of its own', () => {

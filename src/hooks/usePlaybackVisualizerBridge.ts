@@ -90,11 +90,6 @@ export function usePlaybackVisualizerBridge({
             analyserRef.current.getByteFrequencyData(dataArray);
             audioBands.spectrum?.set(dataArray);
 
-            // Time-domain samples (128 = silence). Length is fftSize, not frequencyBinCount.
-            const waveformArray = new Uint8Array(analyserRef.current.fftSize);
-            analyserRef.current.getByteTimeDomainData(waveformArray);
-            audioBands.waveform?.set(waveformArray);
-
             const getEnergy = (minHz: number, maxHz: number): number => {
                 const start = Math.floor(minHz / 21.5);
                 const end = Math.floor(maxHz / 21.5);
@@ -133,7 +128,6 @@ export function usePlaybackVisualizerBridge({
             audioBands.vocal.set(breath);
             audioBands.treble.set(breath);
             audioBands.spectrum?.set(new Uint8Array(0));
-            audioBands.waveform?.set(new Uint8Array(0));
         }
 
         if (isActuallyPlaying && audioElement) {

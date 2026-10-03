@@ -75,7 +75,6 @@ const parseSyncedVisualSettings = (value: Record<string, unknown>): SyncedVisual
     if (value.partitaTuning !== undefined) settings.partitaTuning = value.partitaTuning;
     if (value.fumeTuning !== undefined) settings.fumeTuning = value.fumeTuning;
     if (value.claddaghTuning !== undefined) settings.claddaghTuning = value.claddaghTuning;
-    if (value.waveformTuning !== undefined) settings.waveformTuning = value.waveformTuning;
     if (value.cappellaTuning !== undefined) settings.cappellaTuning = value.cappellaTuning;
     if (value.tiltTuning !== undefined) settings.tiltTuning = value.tiltTuning;
     if (value.dioramaTuning !== undefined) settings.dioramaTuning = value.dioramaTuning;

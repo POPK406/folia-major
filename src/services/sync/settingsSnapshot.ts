@@ -56,7 +56,6 @@ export const buildSyncedVisualSettings = (state: SyncableSettingsState): SyncedV
     partitaTuning: state.partitaTuning,
     fumeTuning: state.fumeTuning,
     claddaghTuning: state.claddaghTuning,
-    waveformTuning: state.waveformTuning,
     cappellaTuning: state.cappellaTuning,
     tiltTuning: state.tiltTuning,
     dioramaTuning: state.dioramaTuning,
@@ -125,7 +124,6 @@ export const applySyncedVisualSettings = (
     if (settings.visualizerTunings === undefined && settings.partitaTuning !== undefined) state.handleSetPartitaTuning(settings.partitaTuning as Parameters<SyncableSettingsState['handleSetPartitaTuning']>[0]);
     if (settings.visualizerTunings === undefined && settings.fumeTuning !== undefined) state.handleSetFumeTuning(settings.fumeTuning as Parameters<SyncableSettingsState['handleSetFumeTuning']>[0]);
     if (settings.visualizerTunings === undefined && settings.claddaghTuning !== undefined) state.handleSetCladdaghTuning(settings.claddaghTuning as Parameters<SyncableSettingsState['handleSetCladdaghTuning']>[0]);
-    if (settings.visualizerTunings === undefined && settings.waveformTuning !== undefined) state.handleSetWaveformTuning(settings.waveformTuning as Parameters<SyncableSettingsState['handleSetWaveformTuning']>[0]);
     if (settings.visualizerTunings === undefined && settings.cappellaTuning !== undefined) state.handleSetCappellaTuning(settings.cappellaTuning as Parameters<SyncableSettingsState['handleSetCappellaTuning']>[0]);
     if (settings.visualizerTunings === undefined && settings.tiltTuning !== undefined) state.handleSetTiltTuning(settings.tiltTuning as Parameters<SyncableSettingsState['handleSetTiltTuning']>[0]);
     if (settings.visualizerTunings === undefined && settings.dioramaTuning !== undefined) state.handleSetDioramaTuning(settings.dioramaTuning as Parameters<SyncableSettingsState['handleSetDioramaTuning']>[0]);

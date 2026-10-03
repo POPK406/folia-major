@@ -1,9 +1,8 @@
 import type { Line, Word } from '../../../../types';
 import {
+    buildTideLineWordRanges,
     collectTideGlyphs,
-    findTideClusterIndex,
     measureTideGlyphRange,
-    normalizeAnchorText,
     readTideMarkAnchors,
 } from './tideGlyphDom';
 import { readTideAnchors } from './tideAnchorBridge';
@@ -110,7 +109,7 @@ export class LyricAnchorSampler {
      * 字强度≈0 直接丢掉；超上限时优先保留最亮的那些。
      */
     private bridgedAnchors(input: TideAnchorInput): TideAnchorSample[] {
-        const frame = readTideAnchors();
+        const frame = readTideAnchors(input.stage);
         if (!frame || input.bounds.width <= 1 || input.bounds.height <= 1) {
             return [];
         }
@@ -206,27 +205,28 @@ export class LyricAnchorSampler {
             return [];
         }
 
+        const line = input.lines[input.lineIndex];
+        if (!line) {
+            return [];
+        }
+
         const { text, glyphs } = collectTideGlyphs(input.stage);
         if (glyphs.length === 0) {
             return [];
         }
 
+        // 一次性建立整行的「词下标 -> 字形区间」映射，再按映射取活跃词。
+        // 不再逐词从串首重新搜索文本：那样一行里出现两次的同一个词，第二个会命中第一个。
+        const ranges = buildTideLineWordRanges(text, line);
+
         const samples: TideAnchorSample[] = [];
-        let cursor = 0;
-
         for (const cluster of clusters) {
-            const needle = normalizeAnchorText(cluster.word.text);
-            if (!needle) {
+            const range = ranges[cluster.index];
+            if (!range) {
                 continue;
             }
 
-            const start = findTideClusterIndex(text, needle, cursor);
-            if (start < 0) {
-                continue;
-            }
-
-            cursor = start + needle.length;
-            const rect = measureTideGlyphRange(glyphs, start, needle.length);
+            const rect = measureTideGlyphRange(glyphs, range.start, range.length);
             if (!rect) {
                 continue;
             }

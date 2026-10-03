@@ -58,7 +58,6 @@ exports[`config surface contract > keeps every field of the exportable visual co
   "visualizerMode",
   "visualizerOpacity",
   "visualizerTunings",
-  "waveformTuning",
 ]
 `;
 
@@ -107,6 +106,5 @@ exports[`config surface contract > keeps every field of the synced visual settin
   "visualizerMode",
   "visualizerOpacity",
   "visualizerTunings",
-  "waveformTuning",
 ]
 `;

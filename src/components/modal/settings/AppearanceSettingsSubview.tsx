@@ -235,7 +235,6 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
         sonnetTuning: state.sonnetTuning,
         temperaTuning: state.temperaTuning,
         lumiereTuning: state.lumiereTuning,
-        waveformTuning: state.waveformTuning,
         urlBackgroundList: state.urlBackgroundList,
         urlBackgroundSelectedId: state.urlBackgroundSelectedId,
         handleSetVisualizerMode: state.handleSetVisualizerMode,
@@ -263,7 +262,6 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
         handleSetSonnetTuning: state.handleSetSonnetTuning,
         handleSetTemperaTuning: state.handleSetTemperaTuning,
         handleSetLumiereTuning: state.handleSetLumiereTuning,
-        handleSetWaveformTuning: state.handleSetWaveformTuning,
         handleAddUrlBackgroundItem: state.handleAddUrlBackgroundItem,
         handleUpdateUrlBackgroundItem: state.handleUpdateUrlBackgroundItem,
         handleSetUrlBackgroundList: state.handleSetUrlBackgroundList,
@@ -529,7 +527,6 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
                 if (has('sonnetTuning') && config.sonnetTuning) storeVisualizer.handleSetSonnetTuning(config.sonnetTuning);
                 if (has('temperaTuning') && config.temperaTuning) storeVisualizer.handleSetTemperaTuning(config.temperaTuning);
                 if (has('lumiereTuning') && config.lumiereTuning) storeVisualizer.handleSetLumiereTuning(config.lumiereTuning);
-                if (has('waveformTuning') && config.waveformTuning) storeVisualizer.handleSetWaveformTuning(config.waveformTuning);
             }
 
             if (has('monetBackgroundTuning') && config.monetBackgroundTuning) {

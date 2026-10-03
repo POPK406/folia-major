@@ -19,6 +19,8 @@ export interface TideRuntimeInput {
     canvas: HTMLCanvasElement | null;
     theme: Theme;
     isDaylight: boolean;
+    /** 静态模式（关闭首页动态背景 / 全局静帧）：只画一帧静帧，不进入逐帧循环。 */
+    staticMode: boolean;
     paused: boolean;
     tuning: TideBackgroundTuning;
     stageRef?: { readonly current: HTMLElement | null };
@@ -51,6 +53,8 @@ export const useTideRuntime = (input: TideRuntimeInput): void => {
     if (!samplerRef.current) {
         samplerRef.current = new LyricAnchorSampler();
     }
+    // canvas 挂载时由 effect 写入；staticMode / canvas 变化时通过它切换「逐帧循环 ↔ 静帧」。
+    const staticControllerRef = useRef<{ sync: () => void } | null>(null);
 
     useEffect(() => {
         const canvas = input.canvas;
@@ -115,6 +119,7 @@ export const useTideRuntime = (input: TideRuntimeInput): void => {
         let painted = false;
         let contextLost = false;
         let frameHandle = 0;
+        let loopRunning = false;
 
         const handleContextLost = (event: Event): void => {
             event.preventDefault();
@@ -138,8 +143,7 @@ export const useTideRuntime = (input: TideRuntimeInput): void => {
         canvas.addEventListener('webglcontextlost', handleContextLost);
         canvas.addEventListener('webglcontextrestored', handleContextRestored);
 
-        const render = (now: number): void => {
-            frameHandle = requestAnimationFrame(render);
+        const drawFrame = (now: number): void => {
             const current = inputRef.current;
             const nowSeconds = now / 1000;
             const elapsed = nowSeconds - lastFrameSeconds;
@@ -286,13 +290,68 @@ export const useTideRuntime = (input: TideRuntimeInput): void => {
             painted = true;
         };
 
-        frameHandle = requestAnimationFrame(render);
+        const tick = (now: number): void => {
+            // 静态模式：画完这一帧就停在原地，不再排下一帧 —— 流体不再步进，水面也不再重绘。
+            if (inputRef.current.staticMode) {
+                loopRunning = false;
+                frameHandle = 0;
+                drawFrame(now);
+                return;
+            }
+
+            frameHandle = requestAnimationFrame(tick);
+            drawFrame(now);
+        };
+
+        const startLoop = (): void => {
+            if (loopRunning) {
+                return;
+            }
+
+            loopRunning = true;
+            // 循环停过一段（静态 → 恢复）后，别让恢复后的第一帧拿到一个巨大的 elapsed。
+            lastFrameSeconds = performance.now() / 1000;
+            frameHandle = requestAnimationFrame(tick);
+        };
+
+        const stopLoop = (): void => {
+            loopRunning = false;
+            if (frameHandle) {
+                cancelAnimationFrame(frameHandle);
+                frameHandle = 0;
+            }
+        };
+
+        // 静帧：把入场进度补满，保证静态首屏就是「浪已经铺开」的样子，然后只画这一帧。
+        const drawStaticFrame = (): void => {
+            introClock = 1;
+            drawFrame(performance.now());
+        };
+
+        staticControllerRef.current = {
+            sync: () => {
+                if (inputRef.current.staticMode) {
+                    stopLoop();
+                    drawStaticFrame();
+                    return;
+                }
+
+                startLoop();
+            },
+        };
 
         return () => {
-            cancelAnimationFrame(frameHandle);
+            stopLoop();
+            staticControllerRef.current = null;
             canvas.removeEventListener('webglcontextlost', handleContextLost);
             canvas.removeEventListener('webglcontextrestored', handleContextRestored);
             disposeTideResources(gl, resources);
         };
     }, [input.canvas]);
+
+    // canvas 挂载 / staticMode 变化时重新对齐循环：挂载时启动或画静帧，静态开启时停下，
+    // 关闭时恢复逐帧渲染。只依赖这两个离散值，滑杆变化不会重启仿真。
+    useEffect(() => {
+        staticControllerRef.current?.sync();
+    }, [input.canvas, input.staticMode]);
 };

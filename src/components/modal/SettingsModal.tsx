@@ -341,8 +341,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         handleResetTemperaTuning: onResetTemperaTuning,
         handleSetLumiereTuning: onLumiereTuningChange,
         handleResetLumiereTuning: onResetLumiereTuning,
-        handleSetWaveformTuning: onWaveformTuningChange,
-        handleResetWaveformTuning: onResetWaveformTuning,
         handleUploadMonetBackgroundImage: onUploadMonetBackgroundImage,
         handleClearMonetBackgroundImage: onClearMonetBackgroundImage,
         handleUploadMonetPortraitImage: onUploadMonetPortraitImage,
@@ -381,7 +379,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         sonnetTuning,
         temperaTuning,
         lumiereTuning,
-        waveformTuning,
         urlBackgroundList,
         urlBackgroundSelectedId,
     } = useVisualizerSettingsStore(useShallow(selectVisualizerSettingsSnapshot));
@@ -2006,7 +2003,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         sonnetTuning={sonnetTuning}
                         temperaTuning={temperaTuning}
                         lumiereTuning={lumiereTuning}
-                        waveformTuning={waveformTuning}
                         cappellaCustomEmojiImages={cappellaCustomEmojiImages}
                         cappellaCustomAvatarImages={cappellaCustomAvatarImages}
                         monetPortraitImage={monetPortraitImage}
@@ -2068,8 +2064,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         onResetTemperaTuning={onResetTemperaTuning}
                         onLumiereTuningChange={onLumiereTuningChange}
                         onResetLumiereTuning={onResetLumiereTuning}
-                        onWaveformTuningChange={onWaveformTuningChange}
-                        onResetWaveformTuning={onResetWaveformTuning}
                         onUploadMonetPortraitImage={onUploadMonetPortraitImage}
                         onClearMonetPortraitImage={onClearMonetPortraitImage}
                         isLoadingMonetPortraitImage={isLoadingMonetPortraitImage}
@@ -2095,7 +2089,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             partita: partitaTuning,
                             fume: fumeTuning,
                             claddagh: claddaghTuning,
-                            waveform: waveformTuning,
                             cappella: cappellaTuning,
                             tilt: tiltTuning,
                             diorama: dioramaTuning,

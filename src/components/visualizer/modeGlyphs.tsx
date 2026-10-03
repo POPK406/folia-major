@@ -92,13 +92,6 @@ const VISUALIZER_MODE_GLYPHS: Record<string, React.ReactNode> = {
             <circle cx="18" cy="9" r="1.5" fill="currentColor" stroke="none" />
         </>
     ),
-    // 波环：倾斜的扁椭圆环上贴着滚动的连续线性波形
-    waveform: (
-        <>
-            <ellipse cx="12" cy="12" rx="9" ry="3.4" transform="rotate(-18 12 12)" opacity="0.5" />
-            <path d="M7.2 8.6v6.8M9.6 7v10M12 6.3v11.4M14.4 7v10M16.8 8.6v6.8" transform="rotate(-18 12 12)" />
-        </>
-    ),
     // 镜台：不同景深上的方块
     diorama: (
         <>

@@ -62,7 +62,6 @@ export const useFoliumHostBridge = (theme: Theme, isDaylight: boolean) => {
         sonnet: state.sonnetTuning,
         tempera: state.temperaTuning,
         lumiere: state.lumiereTuning,
-        waveform: state.waveformTuning,
     })));
     const foliumParams = useFoliumParamStore((state) => state.byScope);
     // Bumped on seeks: position jumps are the one change no store dependency reflects.

@@ -10,6 +10,8 @@ import { useTideRuntime } from './useTideRuntime';
 interface TideBackgroundProps {
     theme: Theme;
     isDaylight: boolean;
+    /** 静态模式（关闭首页动态背景 / 全局静帧）：只画一帧，不进入逐帧循环。 */
+    staticMode?: boolean;
     paused?: boolean;
     tuning: TideBackgroundTuning;
     stageRef?: { readonly current: HTMLElement | null };
@@ -23,6 +25,7 @@ interface TideBackgroundProps {
 const TideBackground: React.FC<TideBackgroundProps> = ({
     theme,
     isDaylight,
+    staticMode,
     paused,
     tuning,
     stageRef,
@@ -41,6 +44,7 @@ const TideBackground: React.FC<TideBackgroundProps> = ({
         canvas,
         theme,
         isDaylight,
+        staticMode: Boolean(staticMode),
         paused: Boolean(paused),
         tuning,
         stageRef,

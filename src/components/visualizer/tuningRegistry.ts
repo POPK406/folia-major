@@ -13,7 +13,6 @@ import type {
     TemperaTuning,
     TiltTuning,
     VisualizerMode,
-    WaveformTuning,
 } from '../../types';
 import type { VisualizerSharedProps } from './definition';
 
@@ -33,8 +32,6 @@ export interface VisualizerTuningMap {
     sonnet: SonnetTuning;
     tempera: TemperaTuning;
     lumiere: LumiereTuning;
-    // 波环：几何字段与回环同构，另有 detail（细分）/ smoothing（平滑）。
-    waveform: WaveformTuning;
 }
 
 export type VisualizerTuningMode = keyof VisualizerTuningMap;

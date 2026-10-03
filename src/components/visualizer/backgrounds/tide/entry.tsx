@@ -20,6 +20,7 @@ export default defineVisualizerBackground({
         theme,
         isDaylight,
         paused,
+        staticMode,
         stageRef,
         lines,
         currentLineIndex,
@@ -31,6 +32,7 @@ export default defineVisualizerBackground({
             <TideBackground
                 theme={theme}
                 isDaylight={isDaylight}
+                staticMode={staticMode}
                 paused={paused}
                 tuning={config?.tide?.tuning ?? DEFAULT_TIDE_BACKGROUND_TUNING}
                 stageRef={stageRef}

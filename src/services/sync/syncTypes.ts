@@ -51,7 +51,6 @@ export type SyncedVisualSettings = {
     partitaTuning?: unknown;
     fumeTuning?: unknown;
     claddaghTuning?: unknown;
-    waveformTuning?: unknown;
     cappellaTuning?: unknown;
     tiltTuning?: unknown;
     dioramaTuning?: unknown;

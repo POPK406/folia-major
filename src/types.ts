@@ -468,45 +468,6 @@ export const DEFAULT_CLADDAGH_TUNING: CladdaghTuning = {
   letterSpacingOffset: 0,
 };
 
-/** 波环的波形细分档位：环上波形条的密度。 */
-export type WaveformDetail = 'low' | 'standard' | 'fine';
-
-/**
- * 波环 tuning：几何字段与回环（CladdaghTuning）同构 —— 同一个倾斜扁椭圆环、
- * 同一套半径/焦点/轴线控制；新增波环自己的字段：
- * - detail：波形细分程度（环上条数）；
- * - smoothing：波形平滑（0 = 原始峰值，1 = 强平滑，FL 时间轴的柔化包络）；
- * - beat*：重拍透视冲击的一组参数（低频起音触发，幅度由低频分贝、角度由中频分贝驱动）。
- */
-export interface WaveformTuning extends CladdaghTuning {
-  detail: WaveformDetail;
-  smoothing: number;
-  /** 重拍总强度（0 = 关）。 */
-  beatImpact: number;
-  /** 重拍前摇（秒）：冲击从 0 升到峰值的时间；0 = 立即到位（生硬）。 */
-  beatAttack: number;
-  /** 重拍回落（秒）：冲击从峰值指数衰减回 0 的时间常数。 */
-  beatDecay: number;
-  /** 幅度：低频分贝驱动的半径扩张 + 条长冲击上限。 */
-  beatExpand: number;
-  /** 角度：中频分贝驱动的透视转正（扁环朝正圆张开）上限。 */
-  beatPerspective: number;
-  /** 检测灵敏度：喂给起音检测器的低频电平前置增益。 */
-  beatSensitivity: number;
-}
-
-export const DEFAULT_WAVEFORM_TUNING: WaveformTuning = {
-  ...DEFAULT_CLADDAGH_TUNING,
-  detail: 'standard',
-  smoothing: 0.15,
-  beatImpact: 0.8,
-  beatAttack: 0.09,
-  beatDecay: 0.38,
-  beatExpand: 0.55,
-  beatPerspective: 0.4,
-  beatSensitivity: 1,
-};
-
 export type CappellaEmojiPackSource = 'builtin' | 'custom';
 export type CappellaAvatarSource = 'cover' | 'builtin' | 'color' | 'custom';
 
@@ -1524,5 +1485,4 @@ export interface AudioBands {
     vocal: MotionValue<number>;   // 1000-3500Hz (Icons)
     treble: MotionValue<number>;  // 3500Hz+ (Crosses)
     spectrum?: MotionValue<Uint8Array<ArrayBuffer>>; // Raw analyser FFT magnitude bins for full-spectrum visualizers
-    waveform?: MotionValue<Uint8Array<ArrayBuffer>>; // Raw analyser time-domain samples (0..255) for oscilloscope visualizers
   }

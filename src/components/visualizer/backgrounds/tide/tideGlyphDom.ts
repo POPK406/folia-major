@@ -1,3 +1,6 @@
+import type { Line } from '../../../../types';
+import { segmentLyricWords } from '../../../../utils/lyrics/wordSegmentation';
+
 // src/components/visualizer/backgrounds/tide/tideGlyphDom.ts
 // Turns the on-screen lyric text (the foreground visualizer's own DOM) into measurable glyph
 // positions. The background never renders lyrics itself: it only asks where the sung characters
@@ -6,6 +9,12 @@
 export interface TideGlyphRef {
     node: Text;
     offset: number;
+}
+
+/** 一个词在汇总字形串里占用的区间；length 为 0 的词不占位。 */
+export interface TideGlyphRange {
+    start: number;
+    length: number;
 }
 
 export interface TideRect {
@@ -158,23 +167,44 @@ export const collectTideGlyphs = (stage: HTMLElement): { text: string; glyphs: T
     return { text, glyphs };
 };
 
-/** Finds the occurrence of one word that is closest to where the line reading has arrived. */
-export const findTideClusterIndex = (text: string, needle: string, searchFrom: number): number => {
-    if (!needle) {
-        return -1;
+/**
+ * 一次性建立整行的「词下标 -> 字形区间」映射（下标对应 Line.words 的顺序）。
+ *
+ * 行文本交给宿主的分词工具 segmentLyricWords 重建 —— 它带上用户保存的 wordSegments，
+ * 与前台可视化真正渲染到 DOM 的分词同源，拼接后再去掉空白就是舞台上这一行的字形序列。
+ * 该序列只在汇总字形串里定位一次，随后按每个词自己的字形长度顺序切区间：同一个词在一行里
+ * 出现多次时，第 n 个词拿到的是第 n 段字形，而不会像「每次从串首重新搜索」那样命中第一段。
+ *
+ * 定位失败或分词与字形长度对不上时返回空数组，调用方据此退回其他锚点，绝不硬切错位。
+ */
+export const buildTideLineWordRanges = (text: string, line: Line): (TideGlyphRange | null)[] => {
+    const words = line.words;
+    if (!text || words.length === 0) {
+        return [];
     }
 
-    let index = text.indexOf(needle, Math.max(0, searchFrom));
-    const nearest = text.indexOf(needle);
-    if (index < 0) {
-        return nearest;
+    const lineText = segmentLyricWords(line)
+        .map(part => normalizeAnchorText(part.segment))
+        .join('');
+    const base = lineText ? text.indexOf(lineText) : -1;
+    if (!lineText || base < 0) {
+        return [];
     }
 
-    if (nearest >= 0 && index - searchFrom > needle.length * 3 + 12) {
-        return nearest;
+    const ranges: (TideGlyphRange | null)[] = [];
+    let cursor = base;
+    for (const word of words) {
+        const length = normalizeAnchorText(word.text).length;
+        // 词长度越界说明 DOM 分词与歌词分词不一致：整行放弃映射，避免把字切到别的词上。
+        if (cursor + length > base + lineText.length) {
+            return [];
+        }
+
+        ranges.push(length > 0 ? { start: cursor, length } : null);
+        cursor += length;
     }
 
-    return index;
+    return ranges;
 };
 
 /** Union of the client rects covering glyphs [start, start + length). */

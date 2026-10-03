@@ -105,7 +105,6 @@ const TUNING_MODES: Record<string, string> = {
     sonnetTuning: 'sonnet',
     temperaTuning: 'tempera',
     lumiereTuning: 'lumiere',
-    waveformTuning: 'waveform',
 };
 
 interface BoxTone {

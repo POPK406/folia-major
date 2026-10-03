@@ -7,7 +7,6 @@ import {
     DEFAULT_FUME_TUNING,
     DEFAULT_LATENT_BACKGROUND_TUNING,
     DEFAULT_LUMIERE_TUNING,
-    DEFAULT_WAVEFORM_TUNING,
     DEFAULT_MONET_BACKGROUND_TUNING,
     DEFAULT_MONET_TUNING,
     DEFAULT_NOMAND_BACKGROUND_TUNING,
@@ -37,7 +36,6 @@ import {
     type LatentBackgroundDisplayMode,
     type LatentBackgroundTuning,
     type LumiereTuning,
-    type WaveformTuning,
     type MonetBackgroundLayout,
     type MonetBackgroundSource,
     type MonetBackgroundTuning,
@@ -76,7 +74,6 @@ import { resolveDioramaMoteCircumference, resolveDioramaMoteRadial } from '../co
 import { parseVisualizerFrameRate, VISUALIZER_FRAME_RATE_STORAGE_KEY } from '../utils/frameRateLimiter';
 import { sanitizeUrlBackgroundList } from '../utils/urlBackground';
 import { normalizeLumiereTuning } from '../utils/lumiereTuning';
-import { normalizeWaveformTuning } from '../utils/waveformTuning';
 
 export const VISUALIZER_OPACITY_STORAGE_KEY = 'visualizer_opacity';
 
@@ -530,19 +527,6 @@ export const readStoredLumiereTuning = (): LumiereTuning => {
         return normalizeLumiereTuning(JSON.parse(saved));
     } catch {
         return DEFAULT_LUMIERE_TUNING;
-    }
-};
-
-export const WAVEFORM_TUNING_STORAGE_KEY = 'waveform_tuning';
-
-export const readStoredWaveformTuning = (): WaveformTuning => {
-    if (typeof window === 'undefined') return DEFAULT_WAVEFORM_TUNING;
-    const saved = localStorage.getItem(WAVEFORM_TUNING_STORAGE_KEY);
-    if (!saved) return DEFAULT_WAVEFORM_TUNING;
-    try {
-        return normalizeWaveformTuning(JSON.parse(saved));
-    } catch {
-        return DEFAULT_WAVEFORM_TUNING;
     }
 };
 

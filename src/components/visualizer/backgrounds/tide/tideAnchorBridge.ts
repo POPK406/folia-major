@@ -4,7 +4,11 @@
 //
 // 存在的理由：这两个模式把歌词画在 Pixi/WebGL 画布内，DOM 里没有字形，而 tide 的字形采集
 // 明确跳过 canvas 子树 —— 它们对 tide 完全不可见，只能退化成时序合成锚点，水面于是和字
-// 毫无关系。这条桥让它们像波环报 data-tide-playhead 一样，把自己的位置主动报出来。
+// 毫无关系。这条桥让它们把自己的位置主动报出来。
+//
+// 按舞台实例隔离：主舞台与样式预览各自持有自己的 Pixi 画布，各画布一份独立的锚点帧 ——
+// 互不覆盖；读取方按「画布是否在自己这棵舞台子树里」认领属于自己的那一份。画布脱离文档
+// （预览关闭、模式卸载）的帧在读取时被剪除，因此不存在指向已卸载画布的残留引用。
 //
 // 约定：x / y 是**画布逻辑像素**（原点在画布左上、y 向下），strength 是该字当前的活跃度
 // （0..1，通常取它当帧的实际 alpha）。tide 侧只用画布的 CSS rect 折算到舞台坐标，
@@ -25,37 +29,60 @@ export interface TideBridgeFrame {
 /** 一帧最多发布多少个逐字锚点。真实需求远小于此，纯粹防失控。 */
 const MAX_BRIDGE_ANCHORS = 512;
 
-/** 预分配槽位：每帧只是覆写数字，不产生任何临时对象。 */
-const slots: TideBridgeAnchor[] = [];
-for (let index = 0; index < MAX_BRIDGE_ANCHORS; index += 1) {
-    slots.push({ x: 0, y: 0, strength: 0 });
+interface TideBridgeFrameState {
+    canvas: HTMLCanvasElement;
+    count: number;
+    /** 预分配槽位：每帧只是覆写数字，不产生任何临时对象。 */
+    anchors: TideBridgeAnchor[];
 }
 
-let canvas: HTMLCanvasElement | null = null;
-let count = 0;
-
-/** 模式挂载时登记自己的画布；卸载时传 null。 */
-export const setTideAnchorCanvas = (next: HTMLCanvasElement | null): void => {
-    canvas = next;
-    count = 0;
+const createFrameState = (canvas: HTMLCanvasElement): TideBridgeFrameState => {
+    const anchors: TideBridgeAnchor[] = [];
+    for (let index = 0; index < MAX_BRIDGE_ANCHORS; index += 1) {
+        anchors.push({ x: 0, y: 0, strength: 0 });
+    }
+    return { canvas, count: 0, anchors };
 };
 
-/** 每帧开头调用一次（由模式自己的 renderFrame 调），重开本帧的锚点列表。 */
-export const beginTideAnchors = (): void => {
-    count = 0;
-};
+/** 每个画布一份帧状态：主舞台与预览互不覆盖，卸载的画布各自回收。 */
+const frames = new Map<HTMLCanvasElement, TideBridgeFrameState>();
 
-/** 发布一个逐字锚点：画布逻辑像素 + 该字当前的活跃度。 */
-export const pushTideAnchor = (x: number, y: number, strength: number): void => {
-    if (count >= MAX_BRIDGE_ANCHORS) {
+/**
+ * 正在发布的那一份帧。begin 时登记，发布在**同一个同步渲染回调**内完成
+ * （renderFrame → beginTideAnchors → publishTideAnchorFrom 全部同步），不会跨帧残留。
+ */
+let active: TideBridgeFrameState | null = null;
+
+/**
+ * 每帧开头调用一次（由模式自己的 renderFrame 调），重开该画布本帧的锚点列表。
+ * 传入自己的画布：这是「按舞台实例隔离」的登记点。
+ */
+export const beginTideAnchors = (canvas: HTMLCanvasElement | null): void => {
+    if (!canvas) {
+        active = null;
         return;
     }
 
-    const slot = slots[count];
+    let frame = frames.get(canvas);
+    if (!frame) {
+        frame = createFrameState(canvas);
+        frames.set(canvas, frame);
+    }
+    frame.count = 0;
+    active = frame;
+};
+
+/** 发布一个逐字锚点：画布逻辑像素 + 该字当前的活跃度。没有活动帧时静默丢弃。 */
+export const pushTideAnchor = (x: number, y: number, strength: number): void => {
+    if (!active || active.count >= MAX_BRIDGE_ANCHORS) {
+        return;
+    }
+
+    const slot = active.anchors[active.count];
     slot.x = x;
     slot.y = y;
     slot.strength = strength;
-    count += 1;
+    active.count += 1;
 };
 
 /** 某个字形容器的最小契约：只要能把「自己在屏幕上的位置」答出来就行。 */
@@ -102,14 +129,47 @@ export const publishTideAnchorFrom = (target: TideAnchorTarget | null, strength:
     pushTideAnchor(global.x, global.y, strength);
 };
 
-/** 模式卸载时清空，避免下一个模式读到上一个模式留下的位置。 */
-export const clearTideAnchors = (): void => {
-    canvas = null;
-    count = 0;
+/** 模式销毁时交还自己的帧：预览关闭后不留残留，主舞台读取不受影响。 */
+export const releaseTideAnchorCanvas = (canvas: HTMLCanvasElement | null): void => {
+    if (!canvas) {
+        return;
+    }
+
+    frames.delete(canvas);
+    if (active?.canvas === canvas) {
+        active = null;
+    }
 };
 
-/** 本帧有没有可用的逐字锚点；没有就返回 null，调用方自然走原有路径。
- *  画布已经脱离文档（模式已卸载）时也返回 null —— 这样模式侧不必写清理逻辑。 */
-export const readTideAnchors = (): TideBridgeFrame | null => (
-    canvas && canvas.isConnected && count > 0 ? { canvas, count, anchors: slots } : null
-);
+/** 全量清空（测试 / 整层下线用）。 */
+export const clearTideAnchors = (): void => {
+    frames.clear();
+    active = null;
+};
+
+/**
+ * 读取属于这个舞台的那一帧逐字锚点：画布必须仍在文档里、且长在 stage 这棵子树内。
+ * 没有可用的就返回 null，调用方自然走原有路径。顺带剪除已脱离文档的画布
+ * （预览关闭、模式卸载），所以不存在读到已卸载画布的位置这回事。
+ */
+export const readTideAnchors = (stage: HTMLElement | null): TideBridgeFrame | null => {
+    if (!stage) {
+        return null;
+    }
+
+    let found: TideBridgeFrameState | null = null;
+    for (const frame of frames.values()) {
+        if (!frame.canvas.isConnected) {
+            frames.delete(frame.canvas);
+            continue;
+        }
+
+        // 只认领长在自己这棵舞台子树里的画布：主舞台与样式预览各取各的，互不串台。
+        if (frame.count > 0 && stage.contains(frame.canvas)) {
+            found = frame;
+            break;
+        }
+    }
+
+    return found ? { canvas: found.canvas, count: found.count, anchors: found.anchors } : null;
+};

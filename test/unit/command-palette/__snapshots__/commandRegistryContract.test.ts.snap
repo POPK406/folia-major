@@ -178,7 +178,6 @@ exports[`command palette registry contract > keeps the registered command order 
   "visualizer-fume",
   "visualizer-tilt",
   "visualizer-claddagh",
-  "visualizer-waveform",
   "visualizer-monet",
   "visualizer-pendolo",
   "visualizer-cappella",

@@ -21,7 +21,6 @@ describe('visualizer registry', () => {
             'fume',
             'tilt',
             'claddagh',
-            'waveform',
             'monet',
             'pendolo',
             'cappella',

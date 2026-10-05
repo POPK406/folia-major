@@ -3,6 +3,7 @@ import { ChevronRight, LogIn, LogOut, UserRound } from 'lucide-react';
 import { AnimatePresence, motion, useMotionValueEvent } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { OnlineProviderId, ProviderAccountSummary } from '../../../types/onlineMusic';
+import { canSwitchToProviderDirectly } from './onlineProviderAccountView';
 import { playerBottomBarLiveOffset } from '../../../stores/motionSignals';
 import {
     PLAYER_BOTTOM_BAR_BASE_OFFSET_PX,
@@ -25,20 +26,28 @@ const AVATAR_BADGE_BY_PROVIDER: Record<string, { label: string; iconUrl?: string
     netease: { label: '云', className: 'bg-red-600' },
     kugou: { label: 'K', className: 'bg-blue-600' },
     qq: { label: 'Q', className: 'bg-green-600' },
+    bodian: { label: '波', className: 'bg-teal-600' },
 };
 
+// Providers without a builtin badge (Folium mod sources) get their name's first letter, like the
+// connect panel, rather than a person icon that reads as an account.
+const fallbackBadge = (provider: ProviderAccountSummary) => ({
+    label: Array.from(provider.shortName)[0] ?? '',
+    className: 'bg-zinc-600',
+});
+
 const ProviderAvatar = ({ provider, className }: { provider: ProviderAccountSummary; className: string }) => {
-    const badge = AVATAR_BADGE_BY_PROVIDER[provider.providerId];
+    const badge = AVATAR_BADGE_BY_PROVIDER[provider.providerId] ?? fallbackBadge(provider);
     return provider.user?.avatarUrl
-        ? <img src={provider.user.avatarUrl.replace(/^http:/, 'https:')} alt={provider.user.nickname} className={`${className} object-cover`} />
+        ? <img src={typeof window !== 'undefined' && window.electron ? provider.user.avatarUrl : provider.user.avatarUrl.replace(/^http:/, 'https:')} alt={provider.user.nickname} className={`${className} object-cover`} />
         : (
             <span
                 aria-label={provider.displayName}
-                className={`${className} flex items-center justify-center overflow-hidden font-black text-white ${badge?.className || 'bg-blue-600'}`}
+                className={`${className} flex items-center justify-center overflow-hidden font-black text-white ${badge.className}`}
             >
-                {badge?.iconUrl
+                {badge.iconUrl
                     ? <img src={badge.iconUrl} alt="" aria-hidden="true" className="h-3/5 w-3/5 object-contain" />
-                    : badge?.label || <UserRound size={20} />}
+                    : badge.label || <UserRound size={20} />}
             </span>
         );
 };
@@ -57,7 +66,8 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
     const rootRef = useRef<HTMLDivElement>(null);
     const baseBottomPxRef = useRef(16);
     const previousProviderIdRef = useRef(activeProviderId);
-    const activeProvider = providers.find(provider => provider.providerId === activeProviderId) || providers[0];
+    const visibleProviders = providers.filter(provider => provider.availability.reason !== 'runtime-unavailable');
+    const activeProvider = visibleProviders.find(provider => provider.providerId === activeProviderId) || visibleProviders[0];
     const surfaceClass = isDaylight ? 'bg-white text-zinc-900' : 'bg-zinc-950 text-white';
 
     /**
@@ -198,9 +208,10 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
                             <ChevronRight size={19} />
                             <span className="text-sm font-semibold">{t('home.backToPlayer')}</span>
                         </button>
-                        {providers.map(provider => {
+                        {visibleProviders.map(provider => {
                             const active = provider.providerId === activeProviderId;
                             const configured = provider.availability.configured;
+                            const accountless = provider.requiresAccount === false;
                             return (
                                 <div
                                     key={provider.providerId}
@@ -213,7 +224,7 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
                                         disabled={!configured}
                                         onClick={() => {
                                             onSelect(provider);
-                                            if (provider.status === 'authenticated') setOpen(false);
+                                            if (canSwitchToProviderDirectly(provider)) setOpen(false);
                                         }}
                                         className="flex min-w-0 flex-1 items-center gap-3 text-left"
                                     >
@@ -229,10 +240,12 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
                                             <span className="mt-1 block truncate text-xs opacity-65">
                                                 {!configured
                                                     ? t('home.providerNotConfigured')
-                                                    : provider.user?.nickname || t('home.providerNotLoggedIn')}
+                                                    : accountless
+                                                        ? t('home.providerNoAccount')
+                                                        : provider.user?.nickname || t('home.providerNotLoggedIn')}
                                             </span>
                                         </span>
-                                        {!active && provider.status !== 'authenticated' ? <LogIn size={16} className="opacity-55" /> : null}
+                                        {!active && !canSwitchToProviderDirectly(provider) ? <LogIn size={16} className="opacity-55" /> : null}
                                     </button>
                                     {active && provider.status === 'authenticated' && (
                                         <button

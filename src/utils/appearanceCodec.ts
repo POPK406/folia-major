@@ -528,6 +528,7 @@ const LUMIERE_SHORT_KEYS = {
     lineArt: 'la',
     frontBokeh: 'fb',
     trails: 'tr',
+    hideTrails: 'ht',
     seamlessTransitions: 'st',
     overlayFrame: 'of',
     textOnly: 'txo',

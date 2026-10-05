@@ -100,6 +100,8 @@ export interface LyricWindowFrame {
     unlitAlpha: number;
     /** 整体亮度（进退场）。 */
     intensity: number;
+    /** 隐藏全部径迹，不改变字的飞行路径；不给时保持原有效果。 */
+    hideTrails?: boolean;
 }
 
 export type { GlyphFlight } from './windowLines';
@@ -870,6 +872,7 @@ export const createLyricWindow = (pixi: PixiModule, options: LyricWindowOptions)
 
     const update = (frame: LyricWindowFrame) => {
         const { time, beams, litColor, unlitColor, unlitAlpha, intensity } = frame;
+        trackLayer.visible = frame.hideTrails !== true;
         // 只有当前背景是 tide 且它开着跟随歌词时才发布锚点；否则这一帧的字形位置没人读，
         // getGlobalPosition() 纯属浪费（别的背景不该替 tide 付这份钱）。
         const publishTideAnchors = shouldPublishTideAnchors();
@@ -898,7 +901,7 @@ export const createLyricWindow = (pixi: PixiModule, options: LyricWindowOptions)
             const passedAge = passed ? time - view.line.endTime : 0;
             const passedDim = passed ? lerp(1, 0.75, clamp01(passedAge / 2.5)) : 1;
             const lineFontPx = heroPx * scale;
-            drawTracks(index, view, time, transform, lineAlpha * passedDim, litHex);
+            if (trackLayer.visible) drawTracks(index, view, time, transform, lineAlpha * passedDim, litHex);
 
             for (const glyph of view.glyphs) {
                 if (glyph.blank) continue;

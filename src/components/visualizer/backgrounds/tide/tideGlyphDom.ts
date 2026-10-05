@@ -177,7 +177,9 @@ export const collectTideGlyphs = (stage: HTMLElement): { text: string; glyphs: T
  * 该序列只在汇总字形串里定位一次，随后按每个词自己的字形长度顺序切区间：同一个词在一行里
  * 出现多次时，第 n 个词拿到的是第 n 段字形，而不会像「每次从串首重新搜索」那样命中第一段。
  *
- * 定位失败或分词与字形长度对不上时返回空数组，调用方据此退回其他锚点，绝不硬切错位。
+ * 整行定位失败时（舞台里混入了歌词的装饰性副本：发光层、对齐用的重复文本），退回逐词推进
+ * 扫描：从上一个词的结尾继续往后找下一个词，副本会被自然跳过。顺序仍必须成立 —— 任一环节
+ * 对不上就返回空数组，调用方据此退回其他锚点，绝不硬切错位。
  */
 export const buildTideLineWordRanges = (text: string, line: Line): (TideGlyphRange | null)[] => {
     const words = line.words;
@@ -188,22 +190,53 @@ export const buildTideLineWordRanges = (text: string, line: Line): (TideGlyphRan
     const lineText = segmentLyricWords(line)
         .map(part => normalizeAnchorText(part.segment))
         .join('');
-    const base = lineText ? text.indexOf(lineText) : -1;
-    if (!lineText || base < 0) {
+    if (!lineText) {
         return [];
     }
 
+    const base = text.indexOf(lineText);
+    if (base >= 0) {
+        return sliceWordRanges(words, base, base + lineText.length);
+    }
+
+    return scanWordRanges(text, words);
+};
+
+/** 从整行命中位置顺序切出每个词的区间；词长度越界（DOM 分词与歌词分词不一致）时整行放弃。 */
+const sliceWordRanges = (words: Line['words'], base: number, end: number): (TideGlyphRange | null)[] => {
     const ranges: (TideGlyphRange | null)[] = [];
     let cursor = base;
     for (const word of words) {
         const length = normalizeAnchorText(word.text).length;
-        // 词长度越界说明 DOM 分词与歌词分词不一致：整行放弃映射，避免把字切到别的词上。
-        if (cursor + length > base + lineText.length) {
+        if (cursor + length > end) {
             return [];
         }
 
         ranges.push(length > 0 ? { start: cursor, length } : null);
         cursor += length;
+    }
+
+    return ranges;
+};
+
+/** 逐词推进扫描：每个词从上一个词的结尾继续往后找，装饰性副本被跳过；找不到就整体放弃。 */
+const scanWordRanges = (text: string, words: Line['words']): (TideGlyphRange | null)[] => {
+    const ranges: (TideGlyphRange | null)[] = [];
+    let cursor = 0;
+    for (const word of words) {
+        const wordText = normalizeAnchorText(word.text);
+        if (wordText.length === 0) {
+            ranges.push(null);
+            continue;
+        }
+
+        const start = text.indexOf(wordText, cursor);
+        if (start < 0) {
+            return [];
+        }
+
+        ranges.push({ start, length: wordText.length });
+        cursor = start + wordText.length;
     }
 
     return ranges;

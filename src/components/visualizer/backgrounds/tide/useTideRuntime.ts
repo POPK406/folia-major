@@ -153,6 +153,13 @@ export const useTideRuntime = (input: TideRuntimeInput): void => {
                 return;
             }
 
+            // 冷启动进播放页时是暂停态：首帧直接把入场补满（和静态模式同一个理由），
+            // 画面是「浪已经铺开、只是不动」，而不是停在 reveal≈0 的黑屏上等 play。
+            // 播放中暂停的画面由上面的早退分支保持，不会走到这里。
+            if (current.paused) {
+                introClock = 1;
+            }
+
             const nextWidth = canvas.clientWidth;
             const nextHeight = canvas.clientHeight;
             if (nextWidth <= 0 || nextHeight <= 0) {

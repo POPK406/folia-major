@@ -243,7 +243,7 @@ export class LyricAnchorSampler {
         return samples;
     }
 
-    /** 没有 DOM 歌词时的替身：沿一条基线随行唱进度摆动，强度减半。 */
+    /** 没有 DOM 歌词时的替身：沿一条基线按「词在行内的阅读顺序」铺开，随行唱进度整体前移，强度减半。 */
     private syntheticClusters(
         input: TideAnchorInput,
         line: Line,
@@ -251,15 +251,27 @@ export class LyricAnchorSampler {
     ): TideAnchorSample[] {
         const span = Math.max(0.4, line.endTime - line.startTime);
         const progress = clamp((input.timeSec - line.startTime) / span, 0, 1);
-        const middle = (clusters.length - 1) / 2;
+        const total = Math.max(1, line.words.length);
 
-        return clusters.map((cluster, order) => ({
-            key: `timing:${cluster.index}`,
-            x: clamp(0.5 + (progress - 0.5) * 0.34 + (order - middle) * 0.17, 0.04, 0.96),
-            y: clamp(FALLBACK_BASELINE + Math.sin((progress + order * 0.25) * Math.PI * 2) * 0.05, 0.08, 0.92),
-            vx: 0,
-            vy: 0,
-            strength: cluster.envelope * 0.55,
-        }));
+        return clusters.map((cluster) => {
+            // 横向位置由词在行内的阅读顺序决定，不用「当下活跃窗口里的相对位次」：
+            // 位次（order - middle）会随窗口滑动一路变小，每个锚点从生到灭都在往左挪，
+            // 整片水被推着从右往左跑 —— 看起来就是一道和歌词毫无关系的左喷的烟。
+            // 阅读顺序不随时间变，锚点就只在字「本来就在」的位置上取水，随行唱进度整体向前。
+            const placement = total > 1 ? cluster.index / (total - 1) : 0.5;
+            return {
+                key: `timing:${cluster.index}`,
+                // 行内进度只给一点轻微的前移（唱着的时候水在走），主体是「词在自己的阅读位上取水」。
+                x: clamp(0.5 + (progress - 0.5) * 0.16 + (placement - 0.5) * 0.68, 0.04, 0.96),
+                y: clamp(
+                    FALLBACK_BASELINE + Math.sin(progress * Math.PI * 2 + cluster.index * 0.7) * 0.05,
+                    0.08,
+                    0.92,
+                ),
+                vx: 0,
+                vy: 0,
+                strength: cluster.envelope * 0.55,
+            };
+        });
     }
 }

@@ -151,6 +151,19 @@ describe('tideGlyphDom', () => {
         expect(buildTideLineWordRanges('ABCD', line)).toEqual([]);
     });
 
+    it('scans word by word when a decorative copy interleaves the line', () => {
+        const line = makeLine([['AB', 1, 1.4], ['CD', 1.4, 2], ['EF', 2.2, 2.8]]);
+        // 装饰性副本（例如 cadenza 的发光层）让行文本在舞台上以「ABAB CDCD EFEF」出现时，
+        // 整行 "ABCDEF" 无法一次命中；逐词推进扫描要把每个词锚回它自己那一份。
+        expect(buildTideLineWordRanges('ABABCDCDEFEF', line)).toEqual([
+            { start: 0, length: 2 },
+            { start: 4, length: 2 },
+            { start: 8, length: 2 },
+        ]);
+        // 副本把顺序打乱（词序对不上）时不允许猜：整体放弃，绝不硬切错位。
+        expect(buildTideLineWordRanges('CDCDABAB', makeLine([['AB', 1, 1.4], ['CD', 1.4, 2]]))).toEqual([]);
+    });
+
     it('measures a glyph range from the union of its client rects', () => {
         stubGlyphRects();
         const stage = buildStage(['ABCDEFGH']);
@@ -312,6 +325,24 @@ describe('LyricAnchorSampler', () => {
         });
     });
 
+    it('keeps a synthetic anchor on its reading-order spot while the active window slides', () => {
+        const sampler = new LyricAnchorSampler();
+        const line = makeLine([['A', 1, 1.5], ['B', 1.5, 2], ['C', 2, 2.5], ['D', 2.5, 3]]);
+        const spotOfB = (timeSec: number) => sampler
+            .sample({ stage: null, maxAnchors: 6, bounds: BOUNDS, lines: [line], lineIndex: 0, timeSec })
+            .find(sample => sample.key === 'timing:1')?.x;
+
+        const early = spotOfB(1.7);
+        const late = spotOfB(2.2);
+        // B 词的横向位次不随「活跃窗口滑动」变化：旧实现用窗口内相对位次（order - middle）铺开，
+        // A 词一退出窗口位次就减一，锚点每步往左跳 0.17 —— 读作整片水被推着从右往左跑。
+        // 现在只剩行进度带来的轻微向前（右）移动。
+        expect(early).toBeDefined();
+        expect(late).toBeDefined();
+        expect(late! - early!).toBeGreaterThan(0);
+        expect(late! - early!).toBeLessThan(0.08);
+    });
+
     it('measures anchors on the real lyric DOM and inverts the y axis', () => {
         stubGlyphRects();
         const stage = buildStage(['ABCD']);
@@ -347,6 +378,43 @@ describe('LyricAnchorSampler', () => {
         // 旧的「从串首重新搜索」只命中第一个（100..120），x 会错成 0.11。
         expect(samples[0].x).toBeCloseTo(0.13, 5);
         expect(samples[0].x).not.toBeCloseTo(0.11, 3);
+    });
+
+    it('skips the decorative glow copy so every cadenza word anchors to its own glyphs', () => {
+        stubGlyphRects();
+        // cadenza 的词结构：body（可见文本）+ glow（透明发光副本，带 skip 标记）。
+        // 早前漏掉 skip 标记时，同一行字在舞台上出现两遍，整行定位失败 —— 水面锚点
+        // 会退回时序兜底并在每行重新洗牌（「向量跟不上字、一直往错的地方跑」的根源）。
+        document.body.innerHTML = '';
+        const stage = document.createElement('div');
+        const makeWord = (text: string, base: number) => {
+            const outer = document.createElement('div');
+            const body = document.createElement('span');
+            body.textContent = text;
+            body.dataset.glyphBase = String(base);
+            const glow = document.createElement('span');
+            glow.dataset.tideSkipAnchor = 'true';
+            const glowText = document.createElement('span');
+            glowText.textContent = text;
+            glow.appendChild(glowText);
+            outer.appendChild(body);
+            outer.appendChild(glow);
+            return outer;
+        };
+        stage.appendChild(makeWord('AB', 0));
+        stage.appendChild(makeWord('CD', 2));
+        stage.appendChild(makeWord('EF', 4));
+        document.body.appendChild(stage);
+
+        const line = makeLine([['AB', 1, 1.6], ['CD', 1.1, 1.6], ['EF', 1.2, 1.6]]);
+        const samples = new LyricAnchorSampler()
+            .sample({ stage, maxAnchors: 6, bounds: BOUNDS, lines: [line], lineIndex: 0, timeSec: 1.3 });
+
+        // 每个词都锚回自己的字形（x 随各自 glyphBase 递增），而不是退回时序兜底。
+        expect(samples.map(sample => sample.key)).toEqual(['dom:0', 'dom:1', 'dom:2']);
+        expect(samples[0].x).toBeCloseTo(0.11, 5);
+        expect(samples[1].x).toBeCloseTo(0.13, 5);
+        expect(samples[2].x).toBeCloseTo(0.15, 5);
     });
 
     it('follows the glyphs but never reports a velocity of its own', () => {

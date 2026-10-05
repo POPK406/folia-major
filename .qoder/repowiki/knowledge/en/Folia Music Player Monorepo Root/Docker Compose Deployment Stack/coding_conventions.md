@@ -1,0 +1,5 @@
+- Each service in `compose.yaml` sets `read_only: true`, mounts a `tmpfs /tmp`, applies `security_opt: no-new-privileges:true`, and defines a healthcheck that curls its own loopback port.
+- Internal services expose ports only via `expose:` and never publish them to the host; only `gateway` and `sync-server` use `ports:` to bind host interfaces.
+- Image references follow the `${FOLIA_IMAGE_NAMESPACE:?...}/folia-<service>:${FOLIA_STACK_VERSION:-latest}` pattern, with `sync-server` using its own `FOLIA_SYNC_VERSION` variable.
+- Multi-stage Dockerfiles separate a `builder` stage (install deps, run `npm ci` / `vite build`) from a slim `runner` stage that copies only the built artifacts and runs as a non-root user.
+- Runtime configuration is injected at container start via shell entrypoints (`entrypoint.sh`) that validate env vars and render templates with `envsubst`, rather than baking config into images.

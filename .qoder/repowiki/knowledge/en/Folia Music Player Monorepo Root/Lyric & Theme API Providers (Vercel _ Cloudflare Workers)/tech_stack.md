@@ -1,0 +1,1 @@
+Vercel frameworkless Node.js functions + Cloudflare Workers; Google GenAI (`gemini-3-flash-preview`) and OpenAI for theme generation; `@yakult-green-tea/qq-music-api` serverless adapter for QQ Music; TypeScript compiled to ESNext targeting the Vercel output dir.

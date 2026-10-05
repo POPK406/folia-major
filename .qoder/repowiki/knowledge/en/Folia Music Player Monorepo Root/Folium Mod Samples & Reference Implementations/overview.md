@@ -1,0 +1,1 @@
+Reference Folium 1 mods shipped with Folia, demonstrating the mod platform's registries, events, services, and visualizer contracts via signed sample implementations.

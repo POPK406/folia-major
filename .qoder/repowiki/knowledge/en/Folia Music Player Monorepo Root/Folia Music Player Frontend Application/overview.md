@@ -1,0 +1,1 @@
+React/Electron frontend for Folia, a music player with local/online library browsing, automix transitions, lyrics visualization, OBS integration, and an extensible mod system.

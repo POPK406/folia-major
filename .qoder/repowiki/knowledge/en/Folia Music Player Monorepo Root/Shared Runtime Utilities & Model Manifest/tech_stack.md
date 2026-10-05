@@ -1,0 +1,1 @@
+Dual ESM/CommonJS modules targeting both Electron (Node.js) and serverless runtimes (Vercel Edge Functions, Cloudflare Workers); OpenAI Chat Completions API with optional `json_schema` structured output, Google Gemini `generateContent` with `responseSchema`, and onnxruntime-based models declared in `modelManifest.json`.

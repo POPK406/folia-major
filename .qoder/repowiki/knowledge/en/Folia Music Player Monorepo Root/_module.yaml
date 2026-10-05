@@ -1,0 +1,39 @@
+schema_version: 1
+module_path: ""
+title: Folia Music Player Monorepo Root
+scope:
+    - .all-contributorsrc
+    - .editorconfig
+    - .env.example
+    - .gitattributes
+    - .gitignore
+    - .npmrc
+    - .nvmrc
+    - AGENTS.md
+    - CLAUDE.md
+    - CONTRIBUTORS.md
+    - FOLIA-ENCYCLOPEDIA.md
+    - LICENSE
+    - README.md
+    - benchmark_chorus.js
+    - dev-probe.html
+    - index.html
+    - metadata.json
+    - mod-export.html
+    - package-lock.json
+    - package.json
+    - playwright.config.ts
+    - playwright.probe.config.ts
+    - postcss.config.js
+    - qq-diag.html
+    - realeco-release
+    - stage-client.html
+    - tailwind.config.js
+    - tsconfig.json
+    - vercel.json
+    - vite.config.ts
+    - vitest.config.ts
+    - wrangler.jsonc
+source_files: []
+depends_on: []
+related_to: []

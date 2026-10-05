@@ -1,0 +1,2 @@
+- Per-topic guides live as one Markdown file at the `docs/` root, with OS-specific or maintenance-only notes grouped under `docs/desktop/` and `docs/chore/` respectively.
+- Auto-generated artifacts carry a header comment stating they are produced by a script and should not be edited by hand, so CI can safely diff them.

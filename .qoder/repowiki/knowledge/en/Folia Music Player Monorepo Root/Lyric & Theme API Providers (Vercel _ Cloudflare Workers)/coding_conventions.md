@@ -1,0 +1,4 @@
+- Each endpoint is implemented as a self-contained module exporting a default handler function, with identical logic mirrored in `api/*.js` (Vercel) and `api-ts/*.ts` (compiled source).
+- The lyric proxy whitelists target hosts via a local `isAllowedLyricProxyHost` check against a fixed set of domains (`qq.com`, `y.gtimg.cn`, `kugou.com`, `amll-ttml-db.stevexmh.net`) before forwarding, and strips sensitive headers listed in `IGNORED_FORWARD_HEADERS`.
+- AI-generated theme responses are always passed through `sanitizeDualTheme` from `shared/themeSanitizer.mjs` and then have `fontStyle` and `provider` fields forced on both light and dark halves before being returned.
+- Environment variables are read directly inside handlers (`process.env.GEMINI_API_KEY`, `env.OPENAI_*`, `env.QQ_SESSION_SECRET`) rather than being injected through a shared config layer.

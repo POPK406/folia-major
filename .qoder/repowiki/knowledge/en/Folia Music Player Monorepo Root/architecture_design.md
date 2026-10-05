@@ -1,0 +1,8 @@
+The root is a single npm workspace that composes multiple independently deployable runtimes around a shared `shared/` library:
+- `frontend_app` (React/Vite) is the primary SPA; `electron_host` provides the Electron main process entry (`main: electron/main.cjs`) that shells the same Vite-built renderer.
+- `lyric_providers` and `sync_server` are multi-runtime modules (Vercel / Cloudflare Workers / Node) sharing code from `shared_lib`, which also exposes OpenAI/Gemini segmentation, theme sanitization, and model manifest metadata consumed by both the Electron app and the serverless endpoints.
+- `mod_gallery` ships reference Folium mods that extend the mod platform defined in `frontend_app`.
+- `docker_deploy` packages the Nginx gateway, Node backend, three music API proxies, and Sync Server behind isolated networks for self-hosting.
+- `packaging` builds native helpers (`windowtolayer`, `folia-wallpaper-helper.exe`, FFmpeg) referenced via env vars (`FOLIA_WINDOWTOLAYER_PATH`, `FOLIA_WALLPAPER_HELPER_PATH`) injected into the Electron build via `package.json.build.extraResources`.
+- `tests` runs Vitest unit/component suites and Playwright E2E suites against the Vite dev server or packaged Electron binary.
+The root `vite.config.ts` is the central build hub: it defines the three HTML entry points (`index.html`, `stage-client.html`, `mod-export.html`), injects commit/hash/version globals, registers the PWA plugin, and mounts a dev-only `/api/lyric-proxy` middleware whitelisting QQ/Kugou domains. `tsconfig.json` enforces ES2022 + strict mode with `isolatedModules` across all children, while `playwright.config.ts` and `vitest.config.ts` scope tests per environment.

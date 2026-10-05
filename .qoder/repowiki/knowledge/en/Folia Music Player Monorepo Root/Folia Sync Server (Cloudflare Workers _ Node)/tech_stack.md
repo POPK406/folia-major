@@ -1,0 +1,1 @@
+Hono 4 web framework with `hono/cors` and `hono/bearer-auth`; Cloudflare Workers + D1 for the recommended deployment; `better-sqlite3` for local Node mode; TypeScript compiled via `tsx` in dev and `tsc` for Node builds; Wrangler 4 for Worker packaging and secret management.

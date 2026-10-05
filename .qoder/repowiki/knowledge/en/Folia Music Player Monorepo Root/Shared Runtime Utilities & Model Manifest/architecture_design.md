@@ -1,0 +1,10 @@
+The module is a flat collection of independent, dual-format (`.mjs` ESM + `.cjs` CommonJS) helpers consumed by both Node/Electron and serverless runtimes.
+
+- `lyricSegmentationService.mjs` is the orchestration layer: it selects between an OpenAI-compatible provider (via `openAICompatibleRequest.mjs`) and Gemini based on env vars (`AI_PROVIDER`, `OPENAI_API_KEY`, `GEMINI_API_KEY`), enforces timeouts via `AbortSignal.timeout`, retries with progressively weaker request shapes from `REASONING_SUPPRESSION_ATTEMPTS`, and delegates prompt assembly / response parsing to `lyricSegmentationPrompt.mjs`.
+- `openAICompatibleRequest.mjs` provides capability negotiation — detecting `openai` / `deepseek` / `generic` providers by hostname, retrying requests when endpoints reject `response_format`, `thinking`, or `max_tokens`, and caching per-endpoint capabilities in an in-process `Map`.
+- `lyricSegmentationPrompt.mjs` owns the prompt text, JSON Schema for OpenAI's `json_schema`, Gemini's `OBJECT` schema, token-budget constants, and the lossless `parseSegmentationResponse` that realigns returned segments back to slices of the original line so whitespace drift cannot corrupt output.
+- `themeSanitizer.mjs` validates and normalizes AI-generated theme objects against a typed fallback, used by serverless theme handlers.
+- `modelManifest.json` is the single source of truth for downloadable ONNX weights and the bundled Python runtime, listing mirrors (hf-mirror → huggingface → GitHub releases) plus SHA-256 hashes; read by both the build script and the Electron main process so they agree on which file is correct.
+- `realecoReleaseMetadata.cjs` validates that commit message, realeco-release file, and package version all agree before publishing.
+
+Dependency direction is one-way: service → prompt + transport; no cross-imports between unrelated helpers. The `.cjs`/`.mjs` duality exists because Electron's main process uses CommonJS while Vercel/Cloudflare use ESM.

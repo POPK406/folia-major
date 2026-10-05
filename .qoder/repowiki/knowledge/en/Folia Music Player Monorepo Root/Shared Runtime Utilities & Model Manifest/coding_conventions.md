@@ -1,0 +1,6 @@
+- Each helper is published as both an ESM (`.mjs`) and CommonJS (`.cjs`) entry so the same logic can be imported from Electron's main process and from serverless handlers without duplication.
+- Provider-specific behavior is selected at runtime by inspecting `apiUrl.hostname` rather than through a configuration table, with unknown hosts falling back to a generic request shape.
+- Endpoint capability mismatches are handled by retry loops that strip unsupported fields (`response_format`, `thinking`, `max_tokens`) and cache the result in an in-process `Map` keyed by `(apiUrl, model)`.
+- Errors thrown from the segmentation pipeline carry an HTTP status code on the error object (e.g. `SegmentationRequestError` with 400/502/504) so both Vercel and Cloudflare adapters can map them uniformly.
+- Model responses are validated defensively: prompts enforce strict schemas, and `parseSegmentationResponse` realigns returned segments back to slices of the original line so whitespace normalization cannot silently corrupt output.
+- Constants governing LLM behavior (token budgets, reasoning suppression ladder, system prompt text) are exported from a dedicated prompt module rather than inlined in the service layer.

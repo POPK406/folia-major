@@ -1,0 +1,4 @@
+- Cross-runtime code lives under `shared/` and is imported by both Electron/renderer and serverless handlers rather than duplicated.
+- Environment-driven feature toggles use top-level constants injected by Vite's `define` block (e.g. `__COMMIT_HASH__`, `__APP_VERSION_LABEL__`, `__APP_RELEASE_CHANNEL__`) instead of runtime config files.
+- Native helper paths are passed to the Electron app via explicit env vars (`FOLIA_WINDOWTOLAYER_PATH`, `FOLIA_WALLPAPER_HELPER_PATH`) set in the `dev:electron*` scripts.
+- Serverless deployments target both Vercel and Cloudflare Workers by keeping handlers free of platform-specific APIs and relying on `shared_lib` for common logic.

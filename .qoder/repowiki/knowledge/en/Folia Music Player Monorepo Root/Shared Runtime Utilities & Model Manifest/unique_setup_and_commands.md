@@ -1,0 +1,1 @@
+`modelManifest.json` must be kept in sync with actual weight files — its `sha256` values are the trust anchor used by `build/fetchModels.mjs` and the Electron main process to verify downloads across hf-mirror, Hugging Face, and GitHub releases; changing a URL without updating the hash breaks verification.

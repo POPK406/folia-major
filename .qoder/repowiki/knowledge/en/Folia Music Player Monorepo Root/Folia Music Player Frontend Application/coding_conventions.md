@@ -1,0 +1,6 @@
+- Zustand state slices are consumed via named `useXxxStore` hooks that select only the needed fields through `useShallow` or selector functions (e.g. `selectAudioSettingsSnapshot`, `selectLyricSettingsSnapshot`).
+- Heavy or optional features are code-split with dynamic `import()` inside `App.tsx` (e.g. Lattice, AutomixTransitionAnimation, Navidrome API) to keep the bootstrap bundle small.
+- Feature domains follow a consistent file-per-concern layout: a model builder (`buildXxxModel.ts` / `createXxxActions.ts`), a hook (`useXxxModel.ts`), and a React component, often grouped under a feature folder.
+- Visualizer presets are isolated into their own directory per mode (e.g. `sonnet/`, `lumiere/`, `tempera/`) and registered through the central `registry.tsx` rather than being imported directly.
+- OBS and remote-control variants share the same codebase by branching on URL-derived flags (`isMainAppSurface`, `isObsBrowserSourceSurface`, `isRemoteControlSurface`) checked in `bootstrap.tsx` to mount different root components.
+- Async side-effects that must run once are gated behind `useEffect(... , [])` patterns in `App.tsx` (e.g. `initializeSyncCoordinator`, loading Navidrome favorites) and use refs to hold mutable runtime objects shared between controllers.

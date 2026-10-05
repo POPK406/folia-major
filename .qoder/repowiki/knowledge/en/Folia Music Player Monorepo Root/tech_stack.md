@@ -1,0 +1,1 @@
+TypeScript 7 (ESNext modules, strict, noEmit) compiled through Vite 8 + React 19; Electron 43 as the desktop host; Playwright for E2E/UI tests and Vitest for unit tests; Tailwind CSS 4 + PostCSS for styling; VitePWA for offline caching; Docker Compose for self-hosted deployment; serverless targets on Vercel and Cloudflare Workers.

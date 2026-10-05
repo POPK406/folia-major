@@ -1,0 +1,14 @@
+schema_version: 1
+module_path: electron_app/utilities
+title: Electron 主进程工具模块集合
+scope:
+    - electron/audioCachePrune.cjs
+    - electron/updateChannels.cjs
+    - electron/windowPlaybackHandoff.cjs
+    - electron/voiceInputPause.cjs
+    - electron/localCoverAssets.cjs
+    - electron/linuxPasswordStore.cjs
+source_files: []
+depends_on: []
+related_to:
+    - path: electron_app/platform_integrations

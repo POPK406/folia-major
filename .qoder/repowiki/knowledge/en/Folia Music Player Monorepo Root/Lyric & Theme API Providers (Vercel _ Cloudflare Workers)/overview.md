@@ -1,0 +1,1 @@
+Serverless endpoints that proxy lyric requests, segment lyrics, and generate dual light/dark themes via Google Gemini or OpenAI, deployed to both Vercel and Cloudflare Workers.

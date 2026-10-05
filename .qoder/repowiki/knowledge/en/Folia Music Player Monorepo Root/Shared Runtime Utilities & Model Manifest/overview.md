@@ -1,0 +1,1 @@
+Cross-runtime utilities shared between Electron, Vercel edge handlers, and Cloudflare Workers: OpenAI/Gemini lyric segmentation, theme sanitization, model manifest metadata, and release-branch validation.

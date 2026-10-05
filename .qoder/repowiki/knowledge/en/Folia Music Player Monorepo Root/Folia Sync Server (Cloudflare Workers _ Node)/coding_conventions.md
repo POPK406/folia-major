@@ -1,0 +1,5 @@
+- All HTTP handlers live in `src/app.ts` and access storage exclusively through the typed `D1Database`/`D1PreparedStatement` interfaces exported from the same file, keeping route logic independent of the concrete backend.
+- Route groups are created with separate `new Hono<{ Bindings: Env }>()` instances — one for public endpoints and one (`api`) for bearer-authenticated endpoints — then mounted via `app.route('/', api)`.
+- SQL statements use parameterized queries with `.bind(...)` and batch writes go through `db.batch([...])` rather than individual calls, especially for theme PUT operations.
+- Input validation is done inline at the top of each handler by coercing raw JSON fields to their expected types (e.g. `typeof value === 'string' && Boolean(value)`) before proceeding, returning `{ ok: false, error: ... }` on malformed payloads.
+- Schema evolution is gated by a module-level `schemaEnsured` flag and `ensureSchema`, which runs `CREATE TABLE IF NOT EXISTS` plus index creation once per process via `db.batch`.

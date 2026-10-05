@@ -1,0 +1,1 @@
+Plain Markdown; generated via `npm run codemap` driven by `dev/mcp/ts-code-map/cli.mjs` and validated against `codemap.mjs`'s `BOUNDARY_RULES` during CI.

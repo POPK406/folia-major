@@ -1,0 +1,1 @@
+All sample mods are pre-signed with the official key; after editing any sample you must re-run `tools/sign.mjs` from folium-compound so `sampleMods.test.ts` passes and the dev panel shows 'verified'. Mods are loaded only when the experimental '模组系统' toggle in Settings → Labs is enabled, and each mod requires a second confirmation before activation.

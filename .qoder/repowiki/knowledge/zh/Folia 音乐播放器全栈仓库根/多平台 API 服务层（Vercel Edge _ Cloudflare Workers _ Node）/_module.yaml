@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: api_services
+title: 多平台 API 服务层（Vercel Edge / Cloudflare Workers / Node）
+scope:
+    - api/
+    - api-ts/
+    - worker/
+source_files: []
+depends_on: []
+related_to:
+    - path: frontend_app
+    - path: shared_runtime

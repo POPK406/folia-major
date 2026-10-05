@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: mod_gallery
+title: Folium Mod Samples & Reference Implementations
+scope:
+    - mods/
+source_files: []
+depends_on: []
+related_to: []

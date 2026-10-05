@@ -1,0 +1,1 @@
+Node ESM scripts (`import.meta.url`-based paths) orchestrate Rust toolchains (Cargo) and Git; the wallpaper helper is a Rust 2021 crate using the `windows` crate v0.62 with explicit Win32 feature gating; AUR packaging follows Arch PKGBUILD conventions.

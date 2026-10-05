@@ -1,0 +1,1 @@
+Docker Compose v2 + Docker Engine 24+, multi-stage Node.js 24 Alpine images, nginx 1.29 Alpine with gettext for `envsubst`, SQLite-backed Sync Server, and npm-based music API wrappers (`@yakult-green-tea/qq-music-api`).

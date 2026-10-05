@@ -1,0 +1,1 @@
+Entry is bootstrapped by `src/index.tsx` which installs global shims (`globalThis.Buffer = Buffer`), console capture, debug module, memory sampling, and frame-rate limiter before dynamically importing `bootstrap.tsx`; `bootstrap.tsx` detects whether it runs as the main app, a remote-control window, or an OBS browser source and mounts the corresponding root component.

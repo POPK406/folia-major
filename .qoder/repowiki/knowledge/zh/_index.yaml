@@ -1,0 +1,252 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: feat/tide-background
+nodes_managed: true
+exported_at: "2026-10-04T09:42:23Z"
+modules:
+    "":
+        dir_name: Folia 音乐播放器全栈仓库根
+        title: Folia 音乐播放器全栈仓库根
+        scope:
+            - README.md
+            - .gitignore
+            - package.json
+            - tsconfig.json
+            - vite.config.ts
+            - tailwind.config.js
+            - postcss.config.js
+            - .npmrc
+            - .editorconfig
+            - .gitattributes
+            - .all-contributorsrc
+            - AGENTS.md
+            - CLAUDE.md
+            - CONTRIBUTORS.md
+            - metadata.json
+            - index.html
+            - dev-probe.html
+            - mod-export.html
+            - stage-client.html
+            - qq-diag.html
+            - playwright.config.ts
+            - playwright.probe.config.ts
+            - vitest.config.ts
+            - vercel.json
+            - wrangler.jsonc
+            - benchmark_chorus.js
+            - .env.example
+            - .nvmrc
+            - FOLIA-ENCYCLOPEDIA.md
+            - LICENSE
+            - package-lock.json
+            - realeco-release
+        source_files: []
+        children:
+            - api_services
+            - deploy_infra
+            - dev_tools
+            - docs_and_assets
+            - electron_app
+            - frontend_app
+            - mods_catalog
+            - shared_runtime
+            - sync_server
+            - tests
+        depends_on: []
+        related_to: []
+    api_services:
+        dir_name: 多平台 API 服务层（Vercel Edge _ Cloudflare Workers _ Node）
+        title: 多平台 API 服务层（Vercel Edge / Cloudflare Workers / Node）
+        scope:
+            - api/
+            - api-ts/
+            - worker/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: frontend_app
+            - path: shared_runtime
+    deploy_infra:
+        dir_name: Docker 部署与桌面端打包
+        title: Docker 部署与桌面端打包
+        scope:
+            - deploy/
+            - packaging/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    dev_tools:
+        dir_name: 开发期辅助工具集（MCP 代码地图、拼音构建插件、组件探针画廊）
+        title: 开发期辅助工具集（MCP 代码地图、拼音构建插件、组件探针画廊）
+        scope:
+            - dev/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    docs_and_assets:
+        dir_name: 文档、静态资源与 GitHub 自动化
+        title: 文档、静态资源与 GitHub 自动化
+        scope:
+            - docs/
+            - public/
+            - .github/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    electron_app:
+        dir_name: Folia Electron 主进程编排层
+        title: Folia Electron 主进程编排层
+        scope:
+            - electron/
+        source_files: []
+        children:
+            - electron_app/api_bridges
+            - electron_app/platform_integrations
+            - electron_app/utilities
+        depends_on: []
+        related_to:
+            - path: mods_catalog
+            - path: shared_runtime
+    electron_app/api_bridges:
+        dir_name: Electron 主进程 API 桥接与本地服务
+        title: Electron 主进程 API 桥接与本地服务
+        scope:
+            - electron/kugouApiBridge.cjs
+            - electron/neteaseApiStartup.cjs
+            - electron/neteaseLoginDiagnostics.cjs
+            - electron/qqApiStartup.cjs
+            - electron/qqAuthSessionRepository.cjs
+            - electron/stageApi.cjs
+            - electron/lyricApi.cjs
+            - electron/aiTextClient.cjs
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: frontend_app
+    electron_app/platform_integrations:
+        dir_name: 平台相关壁纸与系统集成功能
+        title: 平台相关壁纸与系统集成功能
+        scope:
+            - electron/macWallpaperController.cjs
+            - electron/windowsWallpaperController.cjs
+            - electron/windowsWallpaperMouse.cjs
+            - electron/windowsWallpaperTarget.cjs
+            - electron/displaySleepBlocker.cjs
+            - electron/wallpaperWatchdog.cjs
+            - electron/discordPresence.cjs
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: electron_app/utilities
+    electron_app/utilities:
+        dir_name: Electron 主进程工具模块集合
+        title: Electron 主进程工具模块集合
+        scope:
+            - electron/audioCachePrune.cjs
+            - electron/updateChannels.cjs
+            - electron/windowPlaybackHandoff.cjs
+            - electron/voiceInputPause.cjs
+            - electron/localCoverAssets.cjs
+            - electron/linuxPasswordStore.cjs
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: electron_app/platform_integrations
+    frontend_app:
+        dir_name: Folia 音乐播放器前端应用
+        title: Folia 音乐播放器前端应用
+        scope:
+            - src/
+        source_files: []
+        children:
+            - frontend_app/app_bootstrap
+            - frontend_app/top_level_components
+        depends_on: []
+        related_to:
+            - path: api_services
+            - path: electron_app/api_bridges
+            - path: sync_server
+    frontend_app/app_bootstrap:
+        dir_name: 应用启动与根组件装配层
+        title: 应用启动与根组件装配层
+        scope:
+            - src/App.tsx
+            - src/bootstrap.tsx
+            - src/index.tsx
+            - src/index.css
+            - src/types.ts
+            - src/vite-env.d.ts
+            - src/README.md
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    frontend_app/top_level_components:
+        dir_name: 应用顶层 UI 组件集
+        title: 应用顶层 UI 组件集
+        scope:
+            - src/components/AppSplashGate.tsx
+            - src/components/ArtistGridView.tsx
+            - src/components/Carousel3D.tsx
+            - src/components/DevDebugOverlay.tsx
+            - src/components/FloatingPlayerControls.tsx
+            - src/components/Grid3D.tsx
+            - src/components/GridMap.tsx
+            - src/components/GridView.tsx
+            - src/components/ProgressBar.tsx
+            - src/components/TitlebarDragZone.tsx
+            - src/components/UnifiedPanel.tsx
+            - src/components/WindowControls.tsx
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    mods_catalog:
+        dir_name: Folium 模组仓库（mods_ 与 dist-mods_）
+        title: Folium 模组仓库（mods/ 与 dist-mods/）
+        scope:
+            - mods/
+            - dist-mods/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: electron_app
+    shared_runtime:
+        dir_name: 跨运行时共享工具与歌词分段服务
+        title: 跨运行时共享工具与歌词分段服务
+        scope:
+            - shared/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: api_services
+            - path: electron_app
+    sync_server:
+        dir_name: Folia 主题与设置同步服务
+        title: Folia 主题与设置同步服务
+        scope:
+            - sync-server/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: frontend_app
+    tests:
+        dir_name: 应用测试套件（Playwright + Vitest）
+        title: 应用测试套件（Playwright + Vitest）
+        scope:
+            - test/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

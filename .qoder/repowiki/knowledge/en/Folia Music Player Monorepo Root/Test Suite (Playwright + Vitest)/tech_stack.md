@@ -1,0 +1,1 @@
+Playwright (`@playwright/test`) for component and UI/browser tests; Vitest for pure unit tests; snapshot-driven visual regression via `toHaveScreenshot` with `animations: 'disabled'` and CSS-scale baselines.

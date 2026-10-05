@@ -1,0 +1,1 @@
+Multi-runtime sync server for Folia that persists visual settings and theme manifests behind a D1/SQLite backend, deployable as Cloudflare Worker or self-hosted Node.

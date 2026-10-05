@@ -1,0 +1,1 @@
+React 18 + ReactDOM client root, Vite build, Electron host, Zustand stores, framer-motion animations, Pixi.js visualizer runtime, react-i18next for localization, lucide-react icons, Web Audio API for playback/equalizer/effects, Worker threads for automix analysis and lyric parsing.

@@ -1,0 +1,1 @@
+End-to-end, component, UI screenshot, and unit test suites for the Folia music player, organized by runtime environment and feature area.

@@ -1,0 +1,6 @@
+- Client entries export a default `activate(folium)` function that returns an optional disposer; cleanup (event unsubscription, DOM removal) is performed in that return value.
+- UI registrations go through `folium.registries.<registry>.register({ id, label: { 'zh-CN', en }, ... })`, with bilingual labels and numeric `id`s scoped per mod.
+- Multi-line text fields use `{ 'zh-CN': ..., en: ... }` objects rather than plain strings, applied consistently across labels, descriptions, and ponder target text.
+- Third-party libraries are vendored as relative `.mjs` files under the mod directory (e.g. `visualizer52hz/vendor/`) and imported via relative paths instead of bare specifiers.
+- Mod manifests declare every capability explicitly via `permissions` and `experimental` arrays; unknown permissions or undeclared experimental keys are fail-closed by the loader.
+- Signed sample mods ship a `folium.sig.json` next to `mod.json`, keeping the signature file co-located with the mod it covers.

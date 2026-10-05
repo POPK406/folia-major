@@ -1,0 +1,15 @@
+schema_version: 1
+module_path: electron_app/platform_integrations
+title: 平台相关壁纸与系统集成功能
+scope:
+    - electron/macWallpaperController.cjs
+    - electron/windowsWallpaperController.cjs
+    - electron/windowsWallpaperMouse.cjs
+    - electron/windowsWallpaperTarget.cjs
+    - electron/displaySleepBlocker.cjs
+    - electron/wallpaperWatchdog.cjs
+    - electron/discordPresence.cjs
+source_files: []
+depends_on: []
+related_to:
+    - path: electron_app/utilities

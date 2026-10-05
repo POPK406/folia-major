@@ -1,0 +1,1 @@
+`docs/CODEMAP.md` is not hand-edited — regenerate with `npm run codemap`; CI re-generates and diffs it on every commit. Query symbol locations with `node dev/mcp/ts-code-map/cli.mjs search '{"query":"..."}'`.

@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: frontend_app
+title: Folia 音乐播放器前端应用
+scope:
+    - src/
+source_files: []
+depends_on: []
+related_to:
+    - path: api_services
+    - path: electron_app/api_bridges
+    - path: sync_server

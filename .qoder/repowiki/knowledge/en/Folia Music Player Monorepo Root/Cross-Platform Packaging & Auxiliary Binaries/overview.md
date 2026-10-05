@@ -1,0 +1,1 @@
+Build and distribution assets for Folia across Linux (AUR, windowtolayer), Windows (wallpaper helper), and FFmpeg prebuilt bundling consumed by the Electron app.

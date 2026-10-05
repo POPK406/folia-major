@@ -1,0 +1,1 @@
+Docker Compose deployment for the Folia Web stack, packaging the Nginx gateway, Node.js backend, three music API proxies (Netease/Kugou/QQ), and a standalone Sync Server behind isolated networks.

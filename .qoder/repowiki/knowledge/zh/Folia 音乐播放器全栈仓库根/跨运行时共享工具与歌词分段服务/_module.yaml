@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: shared_runtime
+title: 跨运行时共享工具与歌词分段服务
+scope:
+    - shared/
+source_files: []
+depends_on: []
+related_to:
+    - path: api_services
+    - path: electron_app

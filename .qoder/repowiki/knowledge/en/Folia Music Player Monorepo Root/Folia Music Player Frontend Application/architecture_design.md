@@ -1,0 +1,10 @@
+The module is organized as a layered React application rooted at `src/index.tsx` → `bootstrap.tsx` → `App.tsx`, which wires together all cross-cutting subsystems (theme, playback, navigation, settings, sync) before rendering one of several entry surfaces: main app (`App`), remote control window (`RemoteControlApp`), or OBS browser sources (`ObsBrowserSourceApp`, `ObsNowPlayingSourceApp`, `ObsPlayerCapSourceApp`).
+
+Internal layering:
+- `components/`: UI tree. Top-level shells (`AppShell`, `Home`, `PlayerPanel`) compose feature sub-packages: `app/` (home grid, lattice 3D view, dialogs, overlays, search, presentation builders), `command-palette/` (command registry + surface views), `visualizer/` (Pixi.js-based renderer with many preset modes under per-mode folders like `sonnet/`, `lumiere/`, `tempera/`), `panelTab/` (side panel tabs), `modal/` (settings, user guide, lyric match dialogs), `ponder/` (guided tour system), `folia-grid/` (3D hex/polaroid grid), `mods/` (Folium mod host), `remote/`, `obs/`, `floating-player/`.
+- `services/`: domain logic detached from React — `onlineMusic/` (Netease/Kugou/QQ/Navidrome provider abstraction), `automix/` (beat/tempo analysis, transition planning, stem gestures), `lyricExport/`, `playbackRecovery/`, `sync/` (cross-device sync), `repositories/`, plus flat services for local library, cover cache, theme, audio effects, etc.
+- `stores/`: Zustand stores, one per settings/domain slice, accessed via `useXxxStore` selectors.
+- `hooks/`: thin React wrappers around services/stores (e.g. `usePlaybackTransportController`, `useLibraryPlaybackController`, `useOnlineProviderPlatform`).
+- `utils/`, `types/`, `workers/`, `i18n/`, `mods/folium/` (mod SDK & host bridge).
+
+Dependency direction: components depend on hooks/services/stores; services are framework-free; types flow upward. Heavy features (Lattice, AutomixTransitionAnimation) are lazy-imported inside `App.tsx`. Mod extension points live in `mods/folium/` and are initialized after bootstrap via `initFoliumClients()`.

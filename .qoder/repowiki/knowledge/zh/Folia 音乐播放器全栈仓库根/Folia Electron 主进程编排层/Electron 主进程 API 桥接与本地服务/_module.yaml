@@ -1,0 +1,16 @@
+schema_version: 1
+module_path: electron_app/api_bridges
+title: Electron 主进程 API 桥接与本地服务
+scope:
+    - electron/kugouApiBridge.cjs
+    - electron/neteaseApiStartup.cjs
+    - electron/neteaseLoginDiagnostics.cjs
+    - electron/qqApiStartup.cjs
+    - electron/qqAuthSessionRepository.cjs
+    - electron/stageApi.cjs
+    - electron/lyricApi.cjs
+    - electron/aiTextClient.cjs
+source_files: []
+depends_on: []
+related_to:
+    - path: frontend_app

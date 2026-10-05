@@ -1,0 +1,5 @@
+- Browser-side initialization is done via `page.addInitScript` inside `installBaseState` / `seededStorage` rather than mutating globals after navigation, ensuring stores read seeded values at module load time.
+- Version-dependent storage keys are imported from `helpers/appState.ts` (`APP_VERSION`, `GUIDE_VERSION_STORAGE_KEY`) instead of being hard-coded, so guide-onboarding behavior stays in sync with `package.json`.
+- External services are stubbed through Playwright's `page.route`: Netease endpoints match `**/__mock_netease__/**` and Navidrome endpoints match `${NAVIDROME_SERVER}/**`, returning JSON payloads built from the `neteaseFixtures` / `navidromeFixtures` objects.
+- Unit tests mirror the production directory layout under `src/` (e.g. `test/unit/lyrics/`, `test/unit/onlineMusic/`, `test/unit/visualizer/lumiere/`), keeping each feature's tests colocated with its source.
+- Deterministic UI state is achieved by clearing `localStorage`, setting `i18nextLng=en`, `static_mode=true`, and writing `reduce_motion_<surface>=true` for every entry in `MOTION_SURFACE_IDS` before mounting the app.

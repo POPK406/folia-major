@@ -1,0 +1,1 @@
+Electron main process (Node CJS); `electron-store` for settings; `fflate` for mod zip installs; ffmpeg binaries resolved from packaged runtime dirs; optional Python sidecar for HTDemucs segmentation; native helpers `windowtolayer` (Linux/X11/Wayland) and `folia-wallpaper-helper.exe` (Windows WorkerW parenting).

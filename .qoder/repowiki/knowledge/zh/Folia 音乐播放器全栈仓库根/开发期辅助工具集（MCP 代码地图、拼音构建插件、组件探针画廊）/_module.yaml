@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: dev_tools
+title: 开发期辅助工具集（MCP 代码地图、拼音构建插件、组件探针画廊）
+scope:
+    - dev/
+source_files: []
+depends_on: []
+related_to: []

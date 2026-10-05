@@ -1,0 +1,6 @@
+The module is organized around a single shared Hono application (`src/app.ts`) that defines all routes, schema, and data-access logic against an abstract `D1Database` interface. Three runtime adapters plug into it:
+- `src/cloudflare.ts` — entry point for Cloudflare Workers bound to a real D1 database.
+- `src/node.ts` — entry point for standalone Node.js using `better-sqlite3`.
+- `src/d1-emulator.ts` — in-memory/local SQLite implementation of the `D1Database`/`D1PreparedStatement` types so the same app code runs under Node.
+
+Dependency direction is one-way: adapters import `app.ts`; `app.ts` knows nothing about the underlying storage. The API surface is split into two Hono instances — a public one with CORS + dashboard token check (`GET /`, `GET /health`) and a protected `/api/*` sub-app guarded by `bearerAuth(SYNC_TOKEN)`. Schema creation (`settings`, `themes`, `theme_buckets` plus indexes) is idempotent via `ensureSchema` and run once per process through `db.batch`. Theme persistence uses a 256-bucket partitioning scheme keyed by a custom FNV-like hash of the fingerprint; bucket metadata (`count`, XOR'd `hash`, `updated_at`) enables incremental client sync without full-table scans. Configuration flows through environment bindings declared in the `Env` type (`SYNC_TOKEN`, optional `DASHBOARD_TOKEN`, and `FOLIA_SYNC_DB`).

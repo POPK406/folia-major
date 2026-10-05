@@ -1,0 +1,4 @@
+- Each platform-specific build script is a self-contained Node ESM module that resolves `ROOT` relative to `import.meta.url` and writes outputs into a shared `build/` directory consumed by electron-builder.
+- Scripts short-circuit with an informational log and `process.exit(0)` when running on a non-target platform (e.g. `process.platform !== 'linux'` / `!== 'win32'`) rather than failing.
+- External dependencies are pinned to immutable identifiers — Git revisions for windowtolayer, fixed release tags + SHA-256 checksums for FFmpeg archives — and verified before use.
+- Rust crates intended to be built by packaging scripts declare `cfg(windows)`-gated dependencies so they remain compilable on non-Windows hosts for CI linting.

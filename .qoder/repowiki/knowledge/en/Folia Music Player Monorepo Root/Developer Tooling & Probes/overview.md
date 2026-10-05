@@ -1,0 +1,1 @@
+Development-only tooling: an MCP server wrapping tsgo for TS symbol queries, a Vite plugin generating command-palette pinyin dictionaries, and a registry-driven probe harness for visualizing app surfaces.

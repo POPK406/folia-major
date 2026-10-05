@@ -1,0 +1,1 @@
+Node ESM scripts; MCP protocol over stdio against the native `tsc --lsp -stdio` binary shipped with `typescript@7` (no extra npm install); Vite's `parseAst` (rolldown parser) for AST scanning instead of the TS compiler API; framer-motion `useMotionValue` used inside probes for performance instrumentation.

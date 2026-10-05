@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: frontend_app
+title: Folia Music Player Frontend Application
+scope:
+    - src/
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,1 @@
+Markdown documentation for Folia's architecture, deployment, desktop quirks, API contracts, and developer-oriented code maps.

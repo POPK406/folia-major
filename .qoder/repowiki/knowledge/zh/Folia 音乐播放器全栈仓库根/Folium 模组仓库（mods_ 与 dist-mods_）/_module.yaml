@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: mods_catalog
+title: Folium 模组仓库（mods/ 与 dist-mods/）
+scope:
+    - mods/
+    - dist-mods/
+source_files: []
+depends_on: []
+related_to:
+    - path: electron_app

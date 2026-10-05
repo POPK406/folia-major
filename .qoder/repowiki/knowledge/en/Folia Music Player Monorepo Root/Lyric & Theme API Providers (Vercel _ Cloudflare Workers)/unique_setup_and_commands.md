@@ -1,0 +1,1 @@
+TypeScript sources live only under `api-ts/`; run the project's TypeScript compiler (configured in `api-ts/tsconfig.json`) to emit the corresponding `.js` files into `api/` for Vercel deployment. The Worker entry also polyfills `globalThis.Buffer` at module scope because `qq-music-api` requires it without `nodejs_compat`.

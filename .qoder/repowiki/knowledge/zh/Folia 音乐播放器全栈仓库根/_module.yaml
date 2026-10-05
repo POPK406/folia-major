@@ -1,0 +1,39 @@
+schema_version: 1
+module_path: ""
+title: Folia 音乐播放器全栈仓库根
+scope:
+    - README.md
+    - .gitignore
+    - package.json
+    - tsconfig.json
+    - vite.config.ts
+    - tailwind.config.js
+    - postcss.config.js
+    - .npmrc
+    - .editorconfig
+    - .gitattributes
+    - .all-contributorsrc
+    - AGENTS.md
+    - CLAUDE.md
+    - CONTRIBUTORS.md
+    - metadata.json
+    - index.html
+    - dev-probe.html
+    - mod-export.html
+    - stage-client.html
+    - qq-diag.html
+    - playwright.config.ts
+    - playwright.probe.config.ts
+    - vitest.config.ts
+    - vercel.json
+    - wrangler.jsonc
+    - benchmark_chorus.js
+    - .env.example
+    - .nvmrc
+    - FOLIA-ENCYCLOPEDIA.md
+    - LICENSE
+    - package-lock.json
+    - realeco-release
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,1 @@
+Top-level orchestration of the Folia music player, wiring a React/Electron frontend, shared runtime utilities, serverless lyric/theme APIs, a sync server, and cross-platform packaging under one Vite + Electron build.

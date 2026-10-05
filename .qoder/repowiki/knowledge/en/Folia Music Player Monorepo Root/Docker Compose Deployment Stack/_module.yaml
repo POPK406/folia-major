@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: docker_deploy
+title: Docker Compose Deployment Stack
+scope:
+    - deploy/
+source_files: []
+depends_on: []
+related_to: []

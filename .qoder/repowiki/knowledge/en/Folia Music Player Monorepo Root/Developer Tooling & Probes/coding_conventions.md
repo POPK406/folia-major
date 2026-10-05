@@ -1,0 +1,4 @@
+- Each probe is a single `*.probe.tsx` file exporting a default object satisfying `ProbeDefinition`, registered automatically via `import.meta.glob('./*.probe.tsx')` — adding a new probe requires no changes to `registry.ts`.
+- Dev scripts resolve repository roots relative to their own location via `path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')` rather than relying on cwd.
+- Generated artifacts carry a header comment stating they are produced by a script and must not be edited manually (e.g., `api-docs.mjs` writes a leading comment in `docs/folium/api.md`; `commandPinyinPlugin.mjs` emits a similar header in the virtual module).
+- MCP tool implementations follow a uniform shape: a function exported from `tools/<name>.mjs` that receives arguments, delegates to `codemap.mjs` helpers, and returns a compact, formatted result.

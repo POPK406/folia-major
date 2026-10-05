@@ -1,0 +1,14 @@
+schema_version: 1
+module_path: frontend_app/app_bootstrap
+title: 应用启动与根组件装配层
+scope:
+    - src/App.tsx
+    - src/bootstrap.tsx
+    - src/index.tsx
+    - src/index.css
+    - src/types.ts
+    - src/vite-env.d.ts
+    - src/README.md
+source_files: []
+depends_on: []
+related_to: []

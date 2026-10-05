@@ -1,0 +1,1 @@
+Electron main-process entry point wiring the renderer to platform services, wallpaper mode, mod loading, transcode fallback, analysis workers, and per-feature IPC bridges.

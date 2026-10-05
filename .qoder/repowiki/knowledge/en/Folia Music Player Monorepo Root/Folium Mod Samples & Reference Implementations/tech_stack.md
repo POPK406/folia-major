@@ -1,0 +1,1 @@
+Folium 1 mod platform (manifest-driven registry/event/service API); Ed25519 content signing via `folium.sig.json`; `visualizer52hz` ships its own ESM PixiJS build under `vendor/` since mods cannot import bare module names.

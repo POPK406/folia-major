@@ -1,0 +1,19 @@
+schema_version: 1
+module_path: frontend_app/top_level_components
+title: 应用顶层 UI 组件集
+scope:
+    - src/components/AppSplashGate.tsx
+    - src/components/ArtistGridView.tsx
+    - src/components/Carousel3D.tsx
+    - src/components/DevDebugOverlay.tsx
+    - src/components/FloatingPlayerControls.tsx
+    - src/components/Grid3D.tsx
+    - src/components/GridMap.tsx
+    - src/components/GridView.tsx
+    - src/components/ProgressBar.tsx
+    - src/components/TitlebarDragZone.tsx
+    - src/components/UnifiedPanel.tsx
+    - src/components/WindowControls.tsx
+source_files: []
+depends_on: []
+related_to: []

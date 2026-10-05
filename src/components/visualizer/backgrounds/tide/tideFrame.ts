@@ -224,6 +224,10 @@ export const renderTideFrame = (
         u_mid: clamp(params.audio?.mid ?? 0, 0, 3),
         u_treble: clamp(params.audio?.treble ?? 0, 0, 3),
         u_breath: clamp(params.audio?.breath ?? 0, 0, 1.5),
+        // 慢状态：mood 是「这首歌此刻多用力」（秒级），chorus 是段落（副歌）。
+        // 两者只缩放水面的形状与亮部，不碰流体 —— 与 tideAudio 的分工一致。
+        u_mood: clamp(params.audio?.mood ?? 0, 0, 1),
+        u_chorus: clamp(params.audio?.chorus ?? 0, 0, 1),
         u_pulse0: pulseSlots[0] ?? EMPTY_SLOT,
         u_pulse1: pulseSlots[1] ?? EMPTY_SLOT,
         u_pulse2: pulseSlots[2] ?? EMPTY_SLOT,

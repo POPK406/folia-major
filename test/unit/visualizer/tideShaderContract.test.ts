@@ -157,6 +157,20 @@ describe('tide shader contract', () => {
         expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('return (crest - trough) * pulse.w;');
     });
 
+    it('lets the section and the mood reach the water on their own time scale', () => {
+        // 声音的慢层（mood 秒级 / chorus 段落）只缩放水面已有的形状与亮部，不改流体物理。
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('uniform float u_mood;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('uniform float u_chorus;');
+        // 段落：副歌把浪的尺度与字的光池各抬一档，退潮时不加料。
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('swellGain *= 1.0 + u_chorus * 0.20;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('focusField *= 1.0 + u_chorus * 0.30;');
+        // 情绪：quiet 段浪脊保持暗、loud 段发亮；整片水垫一层极淡的基座光。
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('band *= 1.0 + u_mood * 0.22;');
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('glow = clamp(glow + u_mood * 0.05 + u_chorus * 0.05, 0.0, 1.0);');
+        // 鼓点闪光：breath 抬亮浪尖高光 —— 一击一线光。
+        expect(TIDE_SURFACE_FRAGMENT_SHADER).toContain('glint *= 1.0 + breath * 0.30;');
+    });
+
     it('never draws slats: the surface paints one continuous field', () => {
         expect(TIDE_SURFACE_FRAGMENT_SHADER).not.toContain('u_grid');
         expect(TIDE_SURFACE_FRAGMENT_SHADER).not.toContain('floor(');

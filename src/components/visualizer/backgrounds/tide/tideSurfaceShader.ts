@@ -7,6 +7,8 @@
 // small detail, and the analytic slope builds a normal that a grazing light turns into crest lines.
 // 相机开关：整片浪场按歌词位置平移俯仰（字在右边水面就向左滑）。相机平移的是 world（浪场），
 // 不是采样点 uv：水花按屏幕坐标长在字底下，永远不出画面，也不会在边缘翻折/绕回。
+// 声音分四层时间尺度到水面：鼓点（breath，一击一线光）、此刻（bands）、乐句（mood）、
+// 段落（chorus）。快层决定水的形状，慢层只在已有形状上再缩放一笔 —— 不重复计数。
 export const TIDE_SURFACE_FRAGMENT_SHADER = `
 precision highp float;
 uniform vec2 u_size;
@@ -28,6 +30,8 @@ uniform float u_bass;
 uniform float u_mid;
 uniform float u_treble;
 uniform float u_breath;
+uniform float u_mood;
+uniform float u_chorus;
 uniform vec4 u_pulse0;
 uniform vec4 u_pulse1;
 uniform vec4 u_pulse2;
@@ -126,6 +130,9 @@ void main() {
     // beat instead of being kicked around.
     float breath = clamp(u_breath, 0.0, 1.0);
     float swellGain = (1.0 + u_bass * 0.55) * (1.0 + breath * 0.30);
+    // Section: a chorus does not change the physics (the bands drive that) - it lifts the scale of
+    // the sea one notch, so the water reads as knowing which part of the song it is in.
+    swellGain *= 1.0 + u_chorus * 0.20;
     float rippleGain = (1.0 + u_treble * 1.4) * (1.0 + breath * 0.20);
     float steep = u_chop * 0.45 * (1.0 + u_mid * 0.7);
     float stretch = 1.0 - u_stretch * 0.5;
@@ -151,6 +158,8 @@ void main() {
     float inkCarry = 0.55 + clamp(ink, 0.0, 2.0) * 1.15;
     float focusField = (tideFocus(uv, u_focus0) + tideFocus(uv, u_focus1) + tideFocus(uv, u_focus2)) * inkCarry;
     focusField += (tideFocus(uv, u_focus3) + tideFocus(uv, u_focus4) + tideFocus(uv, u_focus5)) * inkCarry;
+    // The chorus leans on the sung words: their pools burn a little brighter when the song opens up.
+    focusField *= 1.0 + u_chorus * 0.30;
 
     // The ring and the lyric ridge are mostly *height*: they raise real crests so the shine comes
     // from the water's own lighting. Only a little is handed to the glow, otherwise the sea washes
@@ -172,13 +181,22 @@ void main() {
     // the crests into one soft wash.
     level = clamp(level + ink * 0.30, 0.0, 1.0);
     float band = pow(smoothstep(0.55, 0.82, level), 2.2) * pow(clamp(level, 0.0, 1.0), u_contrast * 0.5);
+    // Mood: the song's slow energy brightens the crest band, on top of the fast bands above -
+    // quiet verses keep their crests dim, loud passages let them shine.
+    band *= 1.0 + u_mood * 0.22;
     // A light direction with a small z separates the lit slopes from the shaded ones.
     float facet = pow(clamp(diffuse, 0.0, 1.0), 2.3);
     float light = (band * 0.7 + facet * 0.62) * haze;
     float glint = (crest * crest * 0.35 + spec * 1.5) * u_glint * (1.0 + u_treble * 0.75) * haze;
+    // The drum flash: a kick throws the breath up, and the crests answer with a sparkle that
+    // exhales with it - the one place a beat is allowed to be seen directly.
+    glint *= 1.0 + breath * 0.30;
     light += glint * 0.55;
     float glow = 1.0 - exp(-max(ink, 0.0) * u_ink * 1.6);
     glow = clamp(glow + min(ringField, 1.2) * 0.26 + min(focusField, 1.5) * 0.25, 0.0, 1.0);
+    // A faint base glow follows the song's slow state: loud passages (choruses above all) let the
+    // whole sea shimmer a little, quiet verses keep it dark. The fast layers above stay dominant.
+    glow = clamp(glow + u_mood * 0.05 + u_chorus * 0.05, 0.0, 1.0);
     light = 1.0 - (1.0 - clamp(light, 0.0, 1.0)) * (1.0 - glow);
 
     float front = u_intro * 1.35;

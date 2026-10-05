@@ -73,6 +73,12 @@ const RING_LIFE = 2.4;
 const RING_ATTACK = 0.18;
 /** 鼓点呼吸：命中时吸满，之后按这个时间常数呼出去（比鼓点间隔长，所以是"呼吸"不是"打点"）。 */
 const BREATH_TAU = 0.55;
+/**
+ * 呼吸输出的攻击时间常数：命中后 ~70ms 冲上峰值。
+ * 状态机会在 kick 帧瞬时置满，而水面有四处乘 breath（浪高 / 涟漪 / 基线 / 浪尖高光），
+ * 直接把状态透出去 = 每一击一圈一帧宽的阶跃，密集鼓点下读作抽搐。输出前磨出攻击沿即可。
+ */
+const BREATH_ATTACK_TAU = 0.07;
 /** 持续低频也托一点呼吸：鼓点不密时水面不会完全停住。压得很低，安静时水面要真的静下来。 */
 const BREATH_BASS_FLOOR = 0.08;
 /**
@@ -113,6 +119,7 @@ interface TideRing {
 export class TideAudio {
     private level = 0;
     private breath = 0;
+    private breathSmooth = 0;
     private mood = 0;
     private chorus = 0;
     private bass = 0;
@@ -173,6 +180,9 @@ export class TideAudio {
             this.breath = 1;
         }
         this.breath *= Math.exp(-dt / BREATH_TAU);
+        // 状态机保持「命中即满」，输出这里再磨出 ~70ms 的攻击沿：峰值几乎不变（略低几个百分点），
+        // 但每一击不再让依赖 breath 的水面参数做一帧宽的硬跳。
+        this.breathSmooth = approach(this.breathSmooth, this.breath, dt, BREATH_ATTACK_TAU);
 
         // 情绪：秒级慢包络，只跟乐句走。它是「状态」，与上面那些「事件」互不干扰。
         this.mood = approach(this.mood, this.level, dt, MOOD_TAU);
@@ -215,7 +225,7 @@ export class TideAudio {
             // mood 跟着总闸门走；chorus 是结构状态，只要该层没关就保持满幅，否则「强烈」的分档会被闸门削掉一半。
             mood: this.mood * amount,
             chorus: amount > 0 ? this.chorus : 0,
-            breath: clamp(Math.max(this.breath, this.bass * BREATH_BASS_FLOOR), 0, 1) * amount,
+            breath: clamp(Math.max(this.breathSmooth, this.bass * BREATH_BASS_FLOOR), 0, 1) * amount,
             bass: this.bass * amount,
             mid: this.mid * amount,
             treble: this.treble * amount,

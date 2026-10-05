@@ -68,14 +68,18 @@ describe('tide sound layer', () => {
         expect(run(new TideAudio(), input({ power: 0.5 }), 240).level).toBeCloseTo(0.5, 2);
     });
 
-    it('breathes on the drum: it fills on a kick and exhales slowly', () => {
+    it('breathes on the drum: it eases up on a kick and exhales slowly', () => {
         const audio = new TideAudio();
         run(audio, input({ bands: bands() }), 10);
         const kicked = audio.update(input({ bands: bands({ bass: 0.85 }), time: 1 }));
-        expect(kicked.breath).toBeGreaterThan(0.8);
+        // 命中不再一帧跳满：输出沿 ~70ms 的攻击常数爬升（一帧宽的阶跃在密集鼓点下读作抽搐）。
+        expect(kicked.breath).toBeLessThan(0.5);
 
-        const later = run(audio, input({ bands: bands(), time: 1 }), 24);
-        expect(later.breath).toBeLessThan(kicked.breath * 0.6);
+        const rising = run(audio, input({ bands: bands(), time: 1 }), 6);
+        expect(rising.breath).toBeGreaterThan(0.6);
+
+        const later = run(audio, input({ bands: bands(), time: 1 }), 30);
+        expect(later.breath).toBeLessThan(rising.breath * 0.6);
         expect(later.breath).toBeGreaterThan(0);
     });
 
